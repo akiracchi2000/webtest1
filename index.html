@@ -23,7 +23,7 @@
         
         /* タイマー警告時の背景色 */
         body.timer-warning {
-            background-color: #de3a52; /* 濃い赤色 */
+            background-color: #ffebee; /* 薄い赤色 */
         }
 
         /* クイズ全体のコンテナ */
@@ -36,7 +36,7 @@
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
         }
 
-        /* ===== タイマーのスタイル ===== */
+        /* タイマーのスタイル */
         .timer-container {
             position: relative;
             width: 100%;
@@ -186,7 +186,7 @@
 
     <script>
         const quizData = [
-            { question: " 8 \\times 3  - 10 + 5 = ?", choices: ["21", "19", "24", "18"], answer: "19", process: "\\begin{aligned} & (8 \\times 3) - 10 + 5 \\\\ &= 24 - 10 + 5 \\\\ &= 14 + 5 \\\\ &= 19 \\end{aligned}" },
+            { question: "( 8 \\times 3 ) - 10 + 5 = ?", choices: ["21", "19", "24", "18"], answer: "19", process: "\\begin{aligned} & (8 \\times 3) - 10 + 5 \\\\ &= 24 - 10 + 5 \\\\ &= 14 + 5 \\\\ &= 19 \\end{aligned}" },
             { question: "15 + 20 \\div 4 - 2 = ?", choices: ["18", "25", "16", "21"], answer: "18", process: "\\begin{aligned} & 15 + 20 \\div 4 - 2 \\\\ &= 15 + 5 - 2 \\\\ &= 20 - 2 \\\\ &= 18 \\end{aligned}" },
             { question: "9 \\times ( 6 - 3 ) + 7 = ?", choices: ["58", "31", "34", "39"], answer: "34", process: "\\begin{aligned} & 9 \\times (6 - 3) + 7 \\\\ &= 9 \\times 3 + 7 \\\\ &= 27 + 7 \\\\ &= 34 \\end{aligned}" },
             { question: "18 - 6 + 12 \\div 3 = ?", choices: ["18", "8", "12", "16"], answer: "16", process: "\\begin{aligned} & 18 - 6 + 12 \\div 3 \\\\ &= 18 - 6 + 4 \\\\ &= 12 + 4 \\\\ &= 16 \\end{aligned}" },
@@ -208,12 +208,9 @@
         let currentQuestionIndex = 0;
         let score = 0;
         
-        // ===== タイマー関連の変数 =====
-        let timerInterval; // setIntervalのIDを保持
-        let timeLeft = 15; // 残り時間
-        const TIME_LIMIT = 15; // 制限時間（秒）
-
-        // ===== タイマー関連の関数 =====
+        let timerInterval;
+        let timeLeft = 30;
+        const TIME_LIMIT = 30;
 
         function startTimer() {
             timeLeft = TIME_LIMIT;
@@ -227,7 +224,7 @@
                 timerText.textContent = timeLeft;
                 timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
 
-                if (timeLeft <= 5) {
+                if (timeLeft <= 15) {
                     timerBar.classList.add('warning');
                     document.body.classList.add('timer-warning');
                 }
@@ -242,16 +239,47 @@
             clearInterval(timerInterval);
         }
 
+        // ===== 変更点 =====
         function timeUp() {
             stopTimer();
-            // 時間切れの場合は、回答せずに次の問題へ
+
+            // 不正解の時と同じように、画面上の要素を取得
             const choicesContainer = questionArea.querySelector('.choices');
-            if(choicesContainer) choicesContainer.classList.add('answered'); // クリックを無効化
-            nextButton.classList.remove('hidden'); // 次の問題へボタンを表示
-            nextButton.click(); // 自動でクリックして次に進む
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+            const currentQuestion = quizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer;
+
+            // 回答を締め切る
+            if(choicesContainer) {
+                choicesContainer.classList.add('answered');
+            }
+
+            // 「時間切れ」メッセージを表示
+            feedbackMessage.textContent = "時間切れ💦";
+            feedbackMessage.classList.add('incorrect-feedback');
+            feedbackMessage.classList.remove('hidden');
+
+            // 正しい計算プロセスを表示
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            processDisplay.classList.remove('hidden');
+
+            // 正解の選択肢をハイライト
+            Array.from(choicesContainer.children).forEach(child => {
+                if (child.innerText === correctAnswer) {
+                    child.classList.add('correct');
+                }
+            });
+
+            // 「次の問題へ」ボタンを表示する（自動クリックはしない）
+            if (currentQuestionIndex < quizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
         }
 
-        // ===== クイズ本体の関数 =====
 
         function showQuestion() {
             const currentQuestion = quizData[currentQuestionIndex];
@@ -274,11 +302,11 @@
             const problemTextElement = document.getElementById('problem-text');
             katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
             
-            startTimer(); // 問題表示と同時にタイマーを開始
+            startTimer();
         }
 
         function selectAnswer(element, selectedChoice) {
-            stopTimer(); // 回答を選択したらタイマーを停止
+            stopTimer();
 
             const choicesContainer = element.parentElement;
             if (choicesContainer.classList.contains('answered')) return;
@@ -320,7 +348,7 @@
 
         nextButton.addEventListener('click', () => {
             currentQuestionIndex++;
-            document.body.classList.remove('timer-warning'); // 背景色をリセット
+            document.body.classList.remove('timer-warning');
             if (currentQuestionIndex < quizData.length) {
                 showQuestion();
                 nextButton.classList.add('hidden');
@@ -332,7 +360,7 @@
         function showResults() {
             questionArea.classList.add('hidden');
             nextButton.classList.add('hidden');
-            document.querySelector('.timer-container').classList.add('hidden'); // タイマーを非表示
+            document.querySelector('.timer-container').classList.add('hidden');
             
             const finalScore = score * 10;
             const totalPoints = quizData.length * 10;
@@ -347,6 +375,4 @@
     </script>
 
 </body>
-
 </html>
-
