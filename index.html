@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1問1答 計算テスト (タイマー付き)</title>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
+
+    <style>
+        /* ページの基本スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            transition: background-color 0.5s ease; /* 背景色変更のアニメーション */
+        }
+        
+        /* タイマー警告時の背景色 */
+        body.timer-warning {
+            background-color: #ffebee; /* 薄い赤色 */
+        }
+
+        /* クイズ全体のコンテナ */
+        .quiz-container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        /* ===== タイマーのスタイル ===== */
+        .timer-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            margin-bottom: 1.5em;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            border-radius: 15px;
+            transition: width 1s linear, background-color 0.5s ease; /* 幅と色の変化を滑らかに */
+        }
+        .timer-bar.warning {
+            background-color: #dc3545; /* 赤色 */
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin: 0 0 1em 0;
+        }
+
+        .problem-text {
+            font-size: 2em;
+            margin-bottom: 1em;
+            text-align: center;
+            min-height: 50px;
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .choice {
+            display: block;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            border: 2px solid transparent;
+            font-size: 1.2em;
+        }
+        .choice:hover {
+            background-color: #d1d9e0;
+        }
+        
+        .choice.correct {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724;
+            font-weight: bold;
+        }
+        .choice.incorrect {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24;
+        }
+        .choices.answered {
+            pointer-events: none;
+        }
+        .choices.answered .choice:not(.correct):not(.incorrect) {
+            opacity: 0.6;
+        }
+
+        .feedback-area {
+            margin-top: 1.5em;
+            min-height: 150px;
+        }
+        .feedback-message {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            margin: 0 0 15px 0;
+        }
+        .feedback-message.correct-feedback { color: #28a745; }
+        .feedback-message.incorrect-feedback { color: #dc3545; }
+        
+        .calculation-process {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            font-size: 1.1em;
+            border-left: 5px solid #6c757d;
+        }
+        .katex-display {
+            text-align: left !important;
+        }
+        
+        .controls { text-align: center; margin-top: 1em; height: 50px; }
+        #next-btn {
+            padding: 12px 35px;
+            font-size: 1.1em;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #next-btn:hover { background-color: #2980b9; }
+        
+        #results { text-align: center; }
+        #results h2 { color: #2c3e50; }
+        #results p { font-size: 2em; font-weight: bold; color: #3498db; }
+        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+            <span class="timer-text" id="timer-text">30</span>
+        </div>
+        
+        <h1>計算テスト</h1>
+        <div id="question-area"></div>
+        <div id="results" class="hidden">
+            <h2>テスト終了！</h2>
+            <p id="score"></p>
+            <p class="sub-message">お疲れ様でした！</p>
+        </div>
+        <div class="controls">
+            <button id="next-btn" class="hidden">次の問題へ</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { question: " 8 \\times 3  - 10 + 5 = ?", choices: ["21", "19", "24", "18"], answer: "19", process: "\\begin{aligned} & (8 \\times 3) - 10 + 5 \\\\ &= 24 - 10 + 5 \\\\ &= 14 + 5 \\\\ &= 19 \\end{aligned}" },
+            { question: "15 + 20 \\div 4 - 2 = ?", choices: ["18", "25", "16", "21"], answer: "18", process: "\\begin{aligned} & 15 + 20 \\div 4 - 2 \\\\ &= 15 + 5 - 2 \\\\ &= 20 - 2 \\\\ &= 18 \\end{aligned}" },
+            { question: "9 \\times ( 6 - 3 ) + 7 = ?", choices: ["58", "31", "34", "39"], answer: "34", process: "\\begin{aligned} & 9 \\times (6 - 3) + 7 \\\\ &= 9 \\times 3 + 7 \\\\ &= 27 + 7 \\\\ &= 34 \\end{aligned}" },
+            { question: "18 - 6 + 12 \\div 3 = ?", choices: ["18", "8", "12", "16"], answer: "16", process: "\\begin{aligned} & 18 - 6 + 12 \\div 3 \\\\ &= 18 - 6 + 4 \\\\ &= 12 + 4 \\\\ &= 16 \\end{aligned}" },
+            { question: "( 5 + 7 ) \\times 2 - 10 = ?", choices: ["14", "9", "15", "12"], answer: "14", process: "\\begin{aligned} & (5 + 7) \\times 2 - 10 \\\\ &= 12 \\times 2 - 10 \\\\ &= 24 - 10 \\\\ &= 14 \\end{aligned}" },
+            { question: "30 \\div 5 - 2 \\times 3 = ?", choices: ["12", "30", "0", "3"], answer: "0", process: "\\begin{aligned} & 30 \\div 5 - 2 \\times 3 \\\\ &= 6 - 6 \\\\ &= 0 \\end{aligned}" },
+            { question: "4 \\times 5 + 8 - 6 = ?", choices: ["22", "46", "20", "28"], answer: "22", process: "\\begin{aligned} & 4 \\times 5 + 8 - 6 \\\\ &= 20 + 8 - 6 \\\\ &= 28 - 6 \\\\ &= 22 \\end{aligned}" },
+            { question: "20 - ( 8 + 10 \\div 2 ) = ?", choices: ["11", "17", "9", "7"], answer: "7", process: "\\begin{aligned} & 20 - (8 + 10 \\div 2) \\\\ &= 20 - (8 + 5) \\\\ &= 20 - 13 \\\\ &= 7 \\end{aligned}" },
+            { question: "7 + 3 \\times 6 - 4 = ?", choices: ["56", "21", "13", "19"], answer: "21", process: "\\begin{aligned} & 7 + 3 \\times 6 - 4 \\\\ &= 7 + 18 - 4 \\\\ &= 25 - 4 \\\\ &= 21 \\end{aligned}" },
+            { question: "( 24 \\div 4 + 2 ) \\times 3 = ?", choices: ["12", "21", "6", "24"], answer: "24", process: "\\begin{aligned} & (24 \\div 4 + 2) \\times 3 \\\\ &= (6 + 2) \\times 3 \\\\ &= 8 \\times 3 \\\\ &= 24 \\end{aligned}" }
+        ];
+
+        const questionArea = document.getElementById('question-area');
+        const nextButton = document.getElementById('next-btn');
+        const resultsArea = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
+        const timerBar = document.getElementById('timer-bar');
+        const timerText = document.getElementById('timer-text');
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        // ===== タイマー関連の変数 =====
+        let timerInterval; // setIntervalのIDを保持
+        let timeLeft = 20; // 残り時間
+        const TIME_LIMIT = 20; // 制限時間（秒）
+
+        // ===== タイマー関連の関数 =====
+
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('warning');
+            document.body.classList.remove('timer-warning');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+
+                if (timeLeft <= 10) {
+                    timerBar.classList.add('warning');
+                    document.body.classList.add('timer-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function timeUp() {
+            stopTimer();
+            // 時間切れの場合は、回答せずに次の問題へ
+            const choicesContainer = questionArea.querySelector('.choices');
+            if(choicesContainer) choicesContainer.classList.add('answered'); // クリックを無効化
+            nextButton.classList.remove('hidden'); // 次の問題へボタンを表示
+            nextButton.click(); // 自動でクリックして次に進む
+        }
+
+        // ===== クイズ本体の関数 =====
+
+        function showQuestion() {
+            const currentQuestion = quizData[currentQuestionIndex];
+            
+            const choicesHtml = currentQuestion.choices.map(choice => 
+                `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`
+            ).join('');
+
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+            
+            const problemTextElement = document.getElementById('problem-text');
+            katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
+            
+            startTimer(); // 問題表示と同時にタイマーを開始
+        }
+
+        function selectAnswer(element, selectedChoice) {
+            stopTimer(); // 回答を選択したらタイマーを停止
+
+            const choicesContainer = element.parentElement;
+            if (choicesContainer.classList.contains('answered')) return;
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer;
+            
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) {
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                Array.from(choicesContainer.children).forEach(child => {
+                    if (child.innerText === correctAnswer) child.classList.add('correct');
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < quizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning'); // 背景色をリセット
+            if (currentQuestionIndex < quizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden'); // タイマーを非表示
+            
+            const finalScore = score * 10;
+            const totalPoints = quizData.length * 10;
+
+            resultsArea.classList.remove('hidden');
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            showQuestion();
+        });
+    </script>
+
+</body>
+</html>
