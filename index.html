@@ -23,7 +23,7 @@
         
         /* タイマー警告時の背景色 */
         body.timer-warning {
-            background-color: #ffebee; /* 薄い赤色 */
+            background-color: #de3a52; /* 濃い赤色 */
         }
 
         /* クイズ全体のコンテナ */
@@ -210,8 +210,8 @@
         
         // ===== タイマー関連の変数 =====
         let timerInterval; // setIntervalのIDを保持
-        let timeLeft = 20; // 残り時間
-        const TIME_LIMIT = 20; // 制限時間（秒）
+        let timeLeft = 10; // 残り時間
+        const TIME_LIMIT = 10; // 制限時間（秒）
 
         // ===== タイマー関連の関数 =====
 
@@ -227,7 +227,7 @@
                 timerText.textContent = timeLeft;
                 timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
 
-                if (timeLeft <= 10) {
+                if (timeLeft <= 5) {
                     timerBar.classList.add('warning');
                     document.body.classList.add('timer-warning');
                 }
@@ -347,4 +347,5 @@
     </script>
 
 </body>
+
 </html>
