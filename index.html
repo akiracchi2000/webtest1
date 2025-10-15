@@ -209,8 +209,8 @@
         let score = 0;
         
         let timerInterval;
-        let timeLeft = 30;
-        const TIME_LIMIT = 30;
+        let timeLeft = 15;
+        const TIME_LIMIT = 15;
 
         function startTimer() {
             timeLeft = TIME_LIMIT;
@@ -224,7 +224,7 @@
                 timerText.textContent = timeLeft;
                 timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
 
-                if (timeLeft <= 15) {
+                if (timeLeft <= 5) {
                     timerBar.classList.add('warning');
                     document.body.classList.add('timer-warning');
                 }
@@ -376,3 +376,4 @@
 
 </body>
 </html>
+
