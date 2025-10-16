@@ -185,195 +185,28 @@
     </div>
 
     <script>
-        const quizData = [
-            { question: "( 8 \\times 3 ) - 10 + 5 = ?", choices: ["21", "19", "24", "18"], answer: "19", process: "\\begin{aligned} & (8 \\times 3) - 10 + 5 \\\\ &= 24 - 10 + 5 \\\\ &= 14 + 5 \\\\ &= 19 \\end{aligned}" },
-            { question: "15 + 20 \\div 4 - 2 = ?", choices: ["18", "25", "16", "21"], answer: "18", process: "\\begin{aligned} & 15 + 20 \\div 4 - 2 \\\\ &= 15 + 5 - 2 \\\\ &= 20 - 2 \\\\ &= 18 \\end{aligned}" },
-            { question: "9 \\times ( 6 - 3 ) + 7 = ?", choices: ["58", "31", "34", "39"], answer: "34", process: "\\begin{aligned} & 9 \\times (6 - 3) + 7 \\\\ &= 9 \\times 3 + 7 \\\\ &= 27 + 7 \\\\ &= 34 \\end{aligned}" },
-            { question: "18 - 6 + 12 \\div 3 = ?", choices: ["18", "8", "12", "16"], answer: "16", process: "\\begin{aligned} & 18 - 6 + 12 \\div 3 \\\\ &= 18 - 6 + 4 \\\\ &= 12 + 4 \\\\ &= 16 \\end{aligned}" },
-            { question: "( 5 + 7 ) \\times 2 - 10 = ?", choices: ["14", "9", "15", "12"], answer: "14", process: "\\begin{aligned} & (5 + 7) \\times 2 - 10 \\\\ &= 12 \\times 2 - 10 \\\\ &= 24 - 10 \\\\ &= 14 \\end{aligned}" },
-            { question: "30 \\div 5 - 2 \\times 3 = ?", choices: ["12", "30", "0", "3"], answer: "0", process: "\\begin{aligned} & 30 \\div 5 - 2 \\times 3 \\\\ &= 6 - 6 \\\\ &= 0 \\end{aligned}" },
-            { question: "4 \\times 5 + 8 - 6 = ?", choices: ["22", "46", "20", "28"], answer: "22", process: "\\begin{aligned} & 4 \\times 5 + 8 - 6 \\\\ &= 20 + 8 - 6 \\\\ &= 28 - 6 \\\\ &= 22 \\end{aligned}" },
-            { question: "20 - ( 8 + 10 \\div 2 ) = ?", choices: ["11", "17", "9", "7"], answer: "7", process: "\\begin{aligned} & 20 - (8 + 10 \\div 2) \\\\ &= 20 - (8 + 5) \\\\ &= 20 - 13 \\\\ &= 7 \\end{aligned}" },
-            { question: "7 + 3 \\times 6 - 4 = ?", choices: ["56", "21", "13", "19"], answer: "21", process: "\\begin{aligned} & 7 + 3 \\times 6 - 4 \\\\ &= 7 + 18 - 4 \\\\ &= 25 - 4 \\\\ &= 21 \\end{aligned}" },
-            { question: "( 24 \\div 4 + 2 ) \\times 3 = ?", choices: ["12", "21", "6", "24"], answer: "24", process: "\\begin{aligned} & (24 \\div 4 + 2) \\times 3 \\\\ &= (6 + 2) \\times 3 \\\\ &= 8 \\times 3 \\\\ &= 24 \\end{aligned}" }
-        ];
+ // ===== ステップ1：ここに全問題データを記述 =====
+const fullQuizDataBank = [
+  // ... (たくさんの問題データ) ...
+];
 
-        const questionArea = document.getElementById('question-area');
-        const nextButton = document.getElementById('next-btn');
-        const resultsArea = document.getElementById('results');
-        const scoreDisplay = document.getElementById('score');
-        const timerBar = document.getElementById('timer-bar');
-        const timerText = document.getElementById('timer-text');
-        
-        let currentQuestionIndex = 0;
-        let score = 0;
-        
-        let timerInterval;
-        let timeLeft = 15;
-        const TIME_LIMIT = 15;
+// ===== ステップ2：問題をシャッフルして10問選ぶ =====
+function shuffleArray(array) {
+  // ... (シャッフルのためのコード) ...
+}
+const shuffledData = shuffleArray(fullQuizDataBank);
+const selectedQuizData = shuffledData.slice(0, 10); // 10問を抜き出す
 
-        function startTimer() {
-            timeLeft = TIME_LIMIT;
-            timerText.textContent = timeLeft;
-            timerBar.style.width = '100%';
-            timerBar.classList.remove('warning');
-            document.body.classList.remove('timer-warning');
+// --- 以下、既存のコード ---
+// ...
+// ... (関数の定義などが続く) ...
+// ...
 
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerText.textContent = timeLeft;
-                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
-
-                if (timeLeft <= 5) {
-                    timerBar.classList.add('warning');
-                    document.body.classList.add('timer-warning');
-                }
-
-                if (timeLeft <= 0) {
-                    timeUp();
-                }
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
-
-        // ===== 変更点 =====
-        function timeUp() {
-            stopTimer();
-
-            // 不正解の時と同じように、画面上の要素を取得
-            const choicesContainer = questionArea.querySelector('.choices');
-            const feedbackMessage = document.getElementById('feedback-message');
-            const processDisplay = document.getElementById('calculation-process');
-            const currentQuestion = quizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer;
-
-            // 回答を締め切る
-            if(choicesContainer) {
-                choicesContainer.classList.add('answered');
-            }
-
-            // 「時間切れ」メッセージを表示
-            feedbackMessage.textContent = "時間切れ💦";
-            feedbackMessage.classList.add('incorrect-feedback');
-            feedbackMessage.classList.remove('hidden');
-
-            // 正しい計算プロセスを表示
-            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
-            processDisplay.classList.remove('hidden');
-
-            // 正解の選択肢をハイライト
-            Array.from(choicesContainer.children).forEach(child => {
-                if (child.innerText === correctAnswer) {
-                    child.classList.add('correct');
-                }
-            });
-
-            // 「次の問題へ」ボタンを表示する（自動クリックはしない）
-            if (currentQuestionIndex < quizData.length - 1) {
-                nextButton.innerText = "次の問題へ";
-            } else {
-                nextButton.innerText = "結果を見る";
-            }
-            nextButton.classList.remove('hidden');
-        }
-
-
-        function showQuestion() {
-            const currentQuestion = quizData[currentQuestionIndex];
-            
-            const choicesHtml = currentQuestion.choices.map(choice => 
-                `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`
-            ).join('');
-
-            questionArea.innerHTML = `
-                <div class="question-block">
-                    <div class="problem-text" id="problem-text"></div>
-                    <div class="choices">${choicesHtml}</div>
-                    <div class="feedback-area">
-                        <p id="feedback-message" class="hidden"></p>
-                        <div id="calculation-process" class="calculation-process hidden"></div>
-                    </div>
-                </div>
-            `;
-            
-            const problemTextElement = document.getElementById('problem-text');
-            katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
-            
-            startTimer();
-        }
-
-        function selectAnswer(element, selectedChoice) {
-            stopTimer();
-
-            const choicesContainer = element.parentElement;
-            if (choicesContainer.classList.contains('answered')) return;
-            choicesContainer.classList.add('answered');
-
-            const currentQuestion = quizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer;
-            
-            const feedbackMessage = document.getElementById('feedback-message');
-            const processDisplay = document.getElementById('calculation-process');
-
-            if (selectedChoice === correctAnswer) {
-                score++;
-                element.classList.add('correct');
-                feedbackMessage.textContent = "正解💐";
-                feedbackMessage.classList.add('correct-feedback');
-            } else {
-                element.classList.add('incorrect');
-                feedbackMessage.textContent = "不正解💦";
-                feedbackMessage.classList.add('incorrect-feedback');
-                
-                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
-                processDisplay.classList.remove('hidden');
-
-                Array.from(choicesContainer.children).forEach(child => {
-                    if (child.innerText === correctAnswer) child.classList.add('correct');
-                });
-            }
-            
-            feedbackMessage.classList.remove('hidden');
-            
-            if (currentQuestionIndex < quizData.length - 1) {
-                nextButton.innerText = "次の問題へ";
-            } else {
-                nextButton.innerText = "結果を見る";
-            }
-            nextButton.classList.remove('hidden');
-        }
-
-        nextButton.addEventListener('click', () => {
-            currentQuestionIndex++;
-            document.body.classList.remove('timer-warning');
-            if (currentQuestionIndex < quizData.length) {
-                showQuestion();
-                nextButton.classList.add('hidden');
-            } else {
-                showResults();
-            }
-        });
-
-        function showResults() {
-            questionArea.classList.add('hidden');
-            nextButton.classList.add('hidden');
-            document.querySelector('.timer-container').classList.add('hidden');
-            
-            const finalScore = score * 10;
-            const totalPoints = quizData.length * 10;
-
-            resultsArea.classList.remove('hidden');
-            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            showQuestion();
-        });
-    </script>
+document.addEventListener('DOMContentLoaded', function() {
+    showQuestion();
+});   </script>
 
 </body>
 </html>
+
 
