@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算テスト (ランダム10問)</title>
+    <title>計算テスト (タイムアタック)</title>
     
     <link rel="stylesheet" href="./katex/katex.min.css">
     <script defer src="./katex/katex.min.js"></script>
@@ -21,12 +21,10 @@
             transition: background-color 0.5s ease;
         }
         
-        /* タイマー警告時の背景色 */
         body.timer-warning {
-            background-color: #ffebee; /* 薄い赤色 */
+            background-color: #ffebee;
         }
 
-        /* クイズ全体のコンテナ */
         .quiz-container {
             max-width: 600px;
             width: 90%;
@@ -156,9 +154,12 @@
         }
         #next-btn:hover { background-color: #2980b9; }
         
+        /* ===== 結果表示のスタイル（変更・追加）===== */
         #results { text-align: center; }
         #results h2 { color: #2c3e50; }
-        #results p { font-size: 2em; font-weight: bold; color: #3498db; }
+        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
         #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
         
         .hidden { display: none; }
@@ -174,19 +175,23 @@
         
         <h1>計算テスト</h1>
         <div id="question-area"></div>
+        
         <div id="results" class="hidden">
             <h2>テスト終了！</h2>
             <p id="score"></p>
+            <p id="time-info"></p>
+            <p id="rank-info"></p>
             <p class="sub-message">お疲れ様でした！</p>
         </div>
+        
         <div class="controls">
             <button id="next-btn" class="hidden">次の問題へ</button>
         </div>
     </div>
 
     <script>
-        // ===== 全100問の問題データバンク =====
-        const fullQuizDataBank = [
+        // ===== 全100問の問題データバンク (3項計算・正解位置均等) =====
+const fullQuizDataBank = [
     // --- 【1番目が正解の問題】 (25問) ---
     { question: "8 \\times 2 - 5", choices: ["11", "16", "3", "6"], answer: "11", process: "\\begin{aligned} & 8 \\times 2 - 5 \\\\ &= 16 - 5 \\\\ &= 11 \\end{aligned}" },
     { question: "-4 + 6 \\div 2", choices: ["-1", "1", "4", "-4"], answer: "-1", process: "\\begin{aligned} & -4 + 6 \\div 2 \\\\ &= -4 + 3 \\\\ &= -1 \\end{aligned}" },
@@ -292,7 +297,8 @@
     { question: "1 \\times (-12) + 7", choices: ["-5", "19", "20", "-5"], answer: "-5", process: "\\begin{aligned} & 1 \\times (-12) + 7 \\\\ &= -12 + 7 \\\\ &= -5 \\end{aligned}" },
     { question: "36 \\div (-6) - 6", choices: ["0", "12", "-1", "-12"], answer: "-12", process: "\\begin{aligned} & 36 \\div (-6) - 6 \\\\ &= -6 - 6 \\\\ &= -12 \\end{aligned}" }
 ];
-        // ===== 問題をシャッフルして10問選ぶ =====
+
+        // 問題をシャッフルして10問選ぶ
         function shuffleArray(array) {
             const newArray = [...array];
             for (let i = newArray.length - 1; i > 0; i--) {
@@ -316,8 +322,12 @@
         let score = 0;
         
         let timerInterval;
-        let timeLeft = 15;
-        const TIME_LIMIT = 15;
+        let timeLeft = 30;
+        const TIME_LIMIT = 30;
+        
+        // ===== 解答時間計測用の変数（追加）=====
+        let totalSolveTime = 0;
+        let questionStartTime;
 
         // ===== タイマー関数 =====
         function startTimer() {
@@ -332,7 +342,7 @@
                 timerText.textContent = timeLeft;
                 timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
 
-                if (timeLeft <= 5) {
+                if (timeLeft <= 15) {
                     timerBar.classList.add('warning');
                     document.body.classList.add('timer-warning');
                 }
@@ -349,6 +359,8 @@
 
         function timeUp() {
             stopTimer();
+            // ★追加：時間切れの場合、制限時間分を解答時間として加算
+            totalSolveTime += TIME_LIMIT;
 
             const choicesContainer = questionArea.querySelector('.choices');
             const feedbackMessage = document.getElementById('feedback-message');
@@ -403,11 +415,17 @@
             const problemTextElement = document.getElementById('problem-text');
             katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
             
+            // ★追加：問題表示時刻を記録
+            questionStartTime = Date.now();
             startTimer();
         }
 
         function selectAnswer(element, selectedChoice) {
             stopTimer();
+            
+            // ★追加：解答時間を計算して加算
+            const timeTaken = (Date.now() - questionStartTime) / 1000; // 秒に変換
+            totalSolveTime += timeTaken;
 
             const choicesContainer = element.parentElement;
             if (choicesContainer.classList.contains('answered')) return;
@@ -458,6 +476,7 @@
             }
         });
 
+        // ===== 結果表示関数（変更）=====
         function showResults() {
             questionArea.classList.add('hidden');
             nextButton.classList.add('hidden');
@@ -465,12 +484,38 @@
             
             const finalScore = score * 10;
             const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime); // 合計時間を四捨五入
+
+            let rank = '';
+            let rankColor = '';
+
+            // ランク判定
+            if (totalSeconds <= 30) {
+                rank = '⭐️ Sランク ⭐️';
+                rankColor = '#ffc107'; // Gold
+            } else if (totalSeconds <= 45) {
+                rank = '🌛 Aランク 🌛';
+                rankColor = '#6c757d'; // Gray (Silver is too light)
+            } else if (totalSeconds <= 60) {
+                rank = '🌲 Bランク 🌲';
+                rankColor = '#cd7f32'; // Bronze
+            } else {
+                rank = '💪 Cランク 💪';
+                rankColor = '#28a745'; // Green
+            }
 
             resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+
             scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank;
+            rankInfoDisplay.style.color = rankColor; // ランクに応じて色を適用
         }
 
-        // ===== 初期化 =====
+        // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             showQuestion();
         });
@@ -478,4 +523,3 @@
 
 </body>
 </html>
-
