@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算テスト (タイムアタック)</title>
+    <title>計算テスト (モード選択)</title>
     
     <link rel="stylesheet" href="./katex/katex.min.css">
     <script defer src="./katex/katex.min.js"></script>
@@ -25,6 +25,59 @@
             background-color: #ffebee;
         }
 
+        /* ===== モード選択画面のスタイル ===== */
+        #mode-selection {
+            text-align: center;
+            background: #fff;
+            padding: 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #mode-selection h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #normal-mode-btn {
+            background-color: #3498db;
+        }
+        #musou-mode-btn {
+            background-color: #c0392b;
+        }
+
+        /* ===== 無双モード用の背景画像 ===== */
+        #musou-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://i.imgur.com/2Q71A2I.png'); /* 般若の画像URL */
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            z-index: -1; /* コンテンツの背面に配置 */
+        }
+
+        /* クイズ全体のコンテナ */
         .quiz-container {
             max-width: 600px;
             width: 90%;
@@ -34,7 +87,6 @@
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
         }
 
-        /* タイマーのスタイル */
         .timer-container {
             position: relative;
             width: 100%;
@@ -71,106 +123,50 @@
             margin: 0 0 1em 0;
         }
 
-        .problem-text {
-            font-size: 2em;
-            margin-bottom: 1em;
-            text-align: center;
-            min-height: 50px;
-        }
-
-        .choices {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .choice {
-            display: block;
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-            border: 2px solid transparent;
-            font-size: 1.2em;
-        }
-        .choice:hover {
-            background-color: #d1d9e0;
-        }
-        
-        .choice.correct {
-            background-color: #d4edda !important;
-            border-color: #c3e6cb !important;
-            color: #155724;
-            font-weight: bold;
-        }
-        .choice.incorrect {
-            background-color: #f8d7da !important;
-            border-color: #f5c6cb !important;
-            color: #721c24;
-        }
-        .choices.answered {
-            pointer-events: none;
-        }
-        .choices.answered .choice:not(.correct):not(.incorrect) {
-            opacity: 0.6;
-        }
-
-        .feedback-area {
-            margin-top: 1.5em;
-            min-height: 150px;
-        }
-        .feedback-message {
-            font-size: 2.5em;
-            font-weight: bold;
-            text-align: center;
-            margin: 0 0 15px 0;
-        }
+        .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
+        .choice:hover { background-color: #d1d9e0; }
+        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .choices.answered { pointer-events: none; }
+        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+        .feedback-area { margin-top: 1.5em; min-height: 150px; }
+        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
         .feedback-message.correct-feedback { color: #28a745; }
         .feedback-message.incorrect-feedback { color: #dc3545; }
-        
-        .calculation-process {
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            padding: 15px;
-            font-size: 1.1em;
-            border-left: 5px solid #6c757d;
-        }
-        .katex-display {
-            text-align: left !important;
-        }
-        
+        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
+        .katex-display { text-align: left !important; }
         .controls { text-align: center; margin-top: 1em; height: 50px; }
-        #next-btn {
-            padding: 12px 35px;
-            font-size: 1.1em;
-            color: #fff;
-            background-color: #3498db;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
+        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
         #next-btn:hover { background-color: #2980b9; }
-        
-        /* ===== 結果表示のスタイル（変更・追加）===== */
         #results { text-align: center; }
         #results h2 { color: #2c3e50; }
         #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
         #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
         #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
         #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
-        
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="quiz-container">
+    <div id="mode-selection">
+        <h1>モードを選択</h1>
+        <div class="mode-buttons">
+            <button id="normal-mode-btn" class="mode-btn">ノーマルモード</button>
+            <button id="musou-mode-btn" class="mode-btn">無双モード</button>
+        </div>
+        <p style="margin-top: 2em; color: #6c757d;">
+            ノーマル: 15秒 / 警告5秒<br>
+            無双: 5秒 / 警告3秒
+        </p>
+    </div>
+
+    <div class="quiz-container hidden" id="quiz-main">
         <div class="timer-container">
             <div class="timer-bar" id="timer-bar"></div>
-            <span class="timer-text" id="timer-text">30</span>
+            <span class="timer-text" id="timer-text"></span>
         </div>
         
         <h1>計算テスト</h1>
@@ -189,6 +185,8 @@
         </div>
     </div>
 
+    <div id="musou-background" class="hidden"></div>
+    
     <script>
 // ===== 全100問の問題データバンク (3項計算・整数選択肢・左から計算トラップ付き) =====
 const fullQuizDataBank = [
@@ -521,6 +519,7 @@ const fullQuizDataBank = [
 
 </body>
 </html>
+
 
 
 
