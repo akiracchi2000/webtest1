@@ -63,21 +63,19 @@
             background-color: #c0392b;
         }
 
-/* ===== 無双モード用の背景画像 ===== */
-        #musou-background {
+#musou-background {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            /* 画像ファイル名を指定（例: hannya.png） */
-            background-image: url('./hannya.png'); /* ← ★ここ */
-            background-size: cover;
-            background-position: center;
+            background-image: url('./hannya.png');
+            background-repeat: repeat;   /* 画像を繰り返して表示 */
+            background-size: 100px;      /* 画像のサイズを小さく設定 */
+            background-position: center; /* 念のため中央配置も残しておく */
             opacity: 0.15;
-            z-index: -1; /* コンテンツの背面に配置 */
-        }
-        /* クイズ全体のコンテナ */
+            z-index: -1;
+        }        /* クイズ全体のコンテナ */
         .quiz-container {
             max-width: 600px;
             width: 90%;
@@ -547,4 +545,5 @@ const fullQuizDataBank = [
 
 </body>
 </html>
+
 
