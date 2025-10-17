@@ -190,7 +190,7 @@
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
         // ★ ここに、ご自身で作成した問題データを貼り付けてください ★
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        // ===== 全100問の問題データバンク (3項計算・整数選択肢・左から計算トラップ付き) =====
+        // ===== 全100問の問題データバンク (3項計算・整数選択肢・左から計算トラップ付き・選択肢修正版) =====
 const fullQuizDataBank = [
     // --- 【1番目が正解の問題】 (25問) ---
     { question: "10 - 2 \\times 3", choices: ["4", "24", "16", "1"], answer: "4", process: "\\begin{aligned} & 10 - 2 \\times 3 \\\\ &= 10 - 6 \\\\ &= 4 \\end{aligned}" },
@@ -222,7 +222,7 @@ const fullQuizDataBank = [
     { question: "14 - 4 \\times 2", choices: ["20", "6", "12", "18"], answer: "6", process: "\\begin{aligned} & 14 - 4 \\times 2 \\\\ &= 14 - 8 \\\\ &= 6 \\end{aligned}" },
     { question: "-6 + 10 \\div (-5)", choices: ["-1", "-8", "8", "-4"], answer: "-8", process: "\\begin{aligned} & -6 + 10 \\div (-5) \\\\ &= -6 - 2 \\\\ &= -8 \\end{aligned}" },
     { question: "3 - (-2) \\times 7", choices: ["35", "17", "-11", "11"], answer: "17", process: "\\begin{aligned} & 3 - (-2) \\times 7 \\\\ &= 3 - (-14) \\\\ &= 17 \\end{aligned}" },
-    { question: "(-20) \\div 4 + 1", choices: ["-4", "-4", "6", "-6"], answer: "-4", process: "\\begin{aligned} & (-20) \\div 4 + 1 \\\\ &= -5 + 1 \\\\ &= -4 \\end{aligned}" },
+    { question: "(-20) \\div 4 + 1", choices: ["-5", "-4", "6", "-6"], answer: "-4", process: "\\begin{aligned} & (-20) \\div 4 + 1 \\\\ &= -5 + 1 \\\\ &= -4 \\end{aligned}" },
     { question: "4 + (-12) - 3", choices: ["-5", "-11", "11", "13"], answer: "-11", process: "\\begin{aligned} & 4 + (-12) - 3 \\\\ &= -8 - 3 \\\\ &= -11 \\end{aligned}" },
     { question: "7 \\times 3 - (-6)", choices: ["15", "27", "21", "63"], answer: "27", process: "\\begin{aligned} & 7 \\times 3 - (-6) \\\\ &= 21 + 6 \\\\ &= 27 \\end{aligned}" },
     { question: "-21 \\div (-3) + 8", choices: ["-1", "15", "1", "-15"], answer: "15", process: "\\begin{aligned} & -21 \\div (-3) + 8 \\\\ &= 7 + 8 \\\\ &= 15 \\end{aligned}" },
@@ -230,13 +230,13 @@ const fullQuizDataBank = [
     { question: "-9 - 18 \\div (-3)", choices: ["9", "-3", "3", "-15"], answer: "-3", process: "\\begin{aligned} & -9 - 18 \\div (-3) \\\\ &= -9 - (-6) \\\\ &= -3 \\end{aligned}" },
     { question: "16 + 5 \\times (-3)", choices: ["-63", "1", "31", "-1"], answer: "1", process: "\\begin{aligned} & 16 + 5 \\times (-3) \\\\ &= 16 - 15 \\\\ &= 1 \\end{aligned}" },
     { question: "6 \\times (-5) + 4", choices: ["-6", "-26", "26", "6"], answer: "-26", process: "\\begin{aligned} & 6 \\times (-5) + 4 \\\\ &= -30 + 4 \\\\ &= -26 \\end{aligned}" },
-    { question: "-28 \\div 7 - 2", choices: ["-2", "-6", "6", "2"], answer: "-6", process: "\\begin{aligned} & -28 \\div 7 - 2 \\\\ &= -4 - 2 \\\\ &= -6 \\end{aligned}" },
+    { question: "-28 \\div 7 - 2", choices: ["-3", "-6", "6", "2"], answer: "-6", process: "\\begin{aligned} & -28 \\div 7 - 2 \\\\ &= -4 - 2 \\\\ &= -6 \\end{aligned}" },
     { question: "13 - 8 + (-2)", choices: ["-3", "3", "23", "7"], answer: "3", process: "\\begin{aligned} & 13 - 8 + (-2) \\\\ &= 5 - 2 \\\\ &= 3 \\end{aligned}" },
     { question: "-6 \\times 4 + 9", choices: ["-30", "-15", "15", "30"], answer: "-15", process: "\\begin{aligned} & -6 \\times 4 + 9 \\\\ &= -24 + 9 \\\\ &= -15 \\end{aligned}" },
     { question: "27 \\div (-3) - 4", choices: ["-3", "-13", "13", "5"], answer: "-13", process: "\\begin{aligned} & 27 \\div (-3) - 4 \\\\ &= -9 - 4 \\\\ &= -13 \\end{aligned}" },
     { question: "2 - (-9) + 5", choices: ["-12", "16", "6", "-2"], answer: "16", process: "\\begin{aligned} & 2 - (-9) + 5 \\\\ &= 2 + 9 + 5 \\\\ &= 16 \\end{aligned}" },
     { question: "6 \\times (-7) - 8", choices: ["-84", "-50", "50", "34"], answer: "-50", process: "\\begin{aligned} & 6 \\times (-7) - 8 \\\\ &= -42 - 8 \\\\ &= -50 \\end{aligned}" },
-    { question: "-36 \\div (-9) + 2", choices: ["-2", "6", "-6", "2"], answer: "6", process: "\\begin{aligned} & -36 \\div (-9) + 2 \\\\ &= 4 + 2 \\\\ &= 6 \\end{aligned}" },
+    { question: "-36 \\div (-9) + 2", choices: ["-2", "6", "-6", "3"], answer: "6", process: "\\begin{aligned} & -36 \\div (-9) + 2 \\\\ &= 4 + 2 \\\\ &= 6 \\end{aligned}" },
     { question: "3 - 10 \\times 2", choices: ["-14", "-17", "17", "23"], answer: "-17", process: "\\begin{aligned} & 3 - 10 \\times 2 \\\\ &= 3 - 20 \\\\ &= -17 \\end{aligned}" },
     { question: "-14 - (-7) + 3", choices: ["-18", "-4", "24", "10"], answer: "-4", process: "\\begin{aligned} & -14 - (-7) + 3 \\\\ &= -14 + 7 + 3 \\\\ &= -7 + 3 \\\\ &= -4 \\end{aligned}" },
     { question: "12 + 8 \\times (-1)", choices: ["-20", "4", "-4", "20"], answer: "4", process: "\\begin{aligned} & 12 + 8 \\times (-1) \\\\ &= 12 - 8 \\\\ &= 4 \\end{aligned}" },
@@ -248,15 +248,15 @@ const fullQuizDataBank = [
     { question: "16 - 2 \\times 7", choices: ["98", "14", "2", "30"], answer: "2", process: "\\begin{aligned} & 16 - 2 \\times 7 \\\\ &= 16 - 14 \\\\ &= 2 \\end{aligned}" },
     { question: "-10 + 15 \\div (-3)", choices: ["1", "-25", "-15", "5"], answer: "-15", process: "\\begin{aligned} & -10 + 15 \\div (-3) \\\\ &= -10 - 5 \\\\ &= -15 \\end{aligned}" },
     { question: "5 - (-3) \\times 6", choices: ["48", "12", "23", "-13"], answer: "23", process: "\\begin{aligned} & 5 - (-3) \\times 6 \\\\ &= 5 - (-18) \\\\ &= 23 \\end{aligned}" },
-    { question: "(-24) \\div 4 + 2", choices: ["-4", "8", "-4", "-8"], answer: "-4", process: "\\begin{aligned} & (-24) \\div 4 + 2 \\\\ &= -6 + 2 \\\\ &= -4 \\end{aligned}" },
-    { question: "3 + (-15) - 5", choices: ["-7", "-17", "-17", "13"], answer: "-17", process: "\\begin{aligned} & 3 + (-15) - 5 \\\\ &= -12 - 5 \\\\ &= -17 \\end{aligned}" },
+    { question: "(-24) \\div 4 + 2", choices: ["-5", "8", "-4", "-8"], answer: "-4", process: "\\begin{aligned} & (-24) \\div 4 + 2 \\\\ &= -6 + 2 \\\\ &= -4 \\end{aligned}" },
+    { question: "3 + (-15) - 5", choices: ["-7", "-18", "-17", "13"], answer: "-17", process: "\\begin{aligned} & 3 + (-15) - 5 \\\\ &= -12 - 5 \\\\ &= -17 \\end{aligned}" },
     { question: "6 \\times 2 - (-9)", choices: ["-42", "3", "21", "-21"], answer: "21", process: "\\begin{aligned} & 6 \\times 2 - (-9) \\\\ &= 12 + 9 \\\\ &= 21 \\end{aligned}" },
     { question: "-25 \\div (-5) + 3", choices: ["-2", "2", "8", "-8"], answer: "8", process: "\\begin{aligned} & -25 \\div (-5) + 3 \\\\ &= 5 + 3 \\\\ &= 8 \\end{aligned}" },
     { question: "7 - 6 \\times (-2)", choices: ["-2", "2", "19", "-19"], answer: "19", process: "\\begin{aligned} & 7 - 6 \\times (-2) \\\\ &= 7 - (-12) \\\\ &= 19 \\end{aligned}" },
     { question: "-4 - 20 \\div (-4)", choices: ["6", "-9", "1", "9"], answer: "1", process: "\\begin{aligned} & -4 - 20 \\div (-4) \\\\ &= -4 - (-5) \\\\ &= 1 \\end{aligned}" },
     { question: "12 + 9 \\times (-1)", choices: ["-21", "21", "3", "-3"], answer: "3", process: "\\begin{aligned} & 12 + 9 \\times (-1) \\\\ &= 12 - 9 \\\\ &= 3 \\end{aligned}" },
     { question: "8 \\times (-3) + 5", choices: ["-16", "16", "-19", "19"], answer: "-19", process: "\\begin{aligned} & 8 \\times (-3) + 5 \\\\ &= -24 + 5 \\\\ &= -19 \\end{aligned}" },
-    { question: "-36 \\div 9 - 4", choices: ["-4", "0", "-8", "8"], answer: "-8", process: "\\begin{aligned} & -36 \\div 9 - 4 \\\\ &= -4 - 4 \\\\ &= -8 \\end{aligned}" },
+    { question: "-36 \\div 9 - 4", choices: ["-3", "0", "-8", "8"], answer: "-8", process: "\\begin{aligned} & -36 \\div 9 - 4 \\\\ &= -4 - 4 \\\\ &= -8 \\end{aligned}" },
     { question: "15 - 10 + (-5)", choices: ["-20", "10", "0", "20"], answer: "0", process: "\\begin{aligned} & 15 - 10 + (-5) \\\\ &= 5 - 5 \\\\ &= 0 \\end{aligned}" },
     { question: "-4 \\times 6 + 7", choices: ["-31", "31", "-17", "17"], answer: "-17", process: "\\begin{aligned} & -4 \\times 6 + 7 \\\\ &= -24 + 7 \\\\ &= -17 \\end{aligned}" },
     { question: "30 \\div (-10) - 3", choices: ["-1", "1", "-6", "6"], answer: "-6", process: "\\begin{aligned} & 30 \\div (-10) - 3 \\\\ &= -3 - 3 \\\\ &= -6 \\end{aligned}" },
@@ -274,9 +274,9 @@ const fullQuizDataBank = [
     { question: "18 - 5 \\times 3", choices: ["39", "10", "2", "3"], answer: "3", process: "\\begin{aligned} & 18 - 5 \\times 3 \\\\ &= 18 - 15 \\\\ &= 3 \\end{aligned}" },
     { question: "-12 + 16 \\div (-4)", choices: ["-1", "1", "-20", "-16"], answer: "-16", process: "\\begin{aligned} & -12 + 16 \\div (-4) \\\\ &= -12 - 4 \\\\ &= -16 \\end{aligned}" },
     { question: "2 - (-5) \\times 4", choices: ["28", "-12", "18", "22"], answer: "22", process: "\\begin{aligned} & 2 - (-5) \\times 4 \\\\ &= 2 - (-20) \\\\ &= 22 \\end{aligned}" },
-    { question: "(-27) \\div 3 + 6", choices: ["-3", "3", "15", "-3"], answer: "-3", process: "\\begin{aligned} & (-27) \\div 3 + 6 \\\\ &= -9 + 6 \\\\ &= -3 \\end{aligned}" },
-    { question: "5 + (-14) - 2", choices: ["-7", "-11", "17", "-11"], answer: "-11", process: "\\begin{aligned} & 5 + (-14) - 2 \\\\ &= -9 - 2 \\\\ &= -11 \\end{aligned}" },
-    { question: "9 \\times 2 - (-7)", choices: ["11", "25", "4", "25"], answer: "25", process: "\\begin{aligned} & 9 \\times 2 - (-7) \\\\ &= 18 + 7 \\\\ &= 25 \\end{aligned}" },
+    { question: "(-27) \\div 3 + 6", choices: ["-2", "3", "15", "-3"], answer: "-3", process: "\\begin{aligned} & (-27) \\div 3 + 6 \\\\ &= -9 + 6 \\\\ &= -3 \\end{aligned}" },
+    { question: "5 + (-14) - 2", choices: ["-7", "-12", "17", "-11"], answer: "-11", process: "\\begin{aligned} & 5 + (-14) - 2 \\\\ &= -9 - 2 \\\\ &= -11 \\end{aligned}" },
+    { question: "9 \\times 2 - (-7)", choices: ["11", "24", "4", "25"], answer: "25", process: "\\begin{aligned} & 9 \\times 2 - (-7) \\\\ &= 18 + 7 \\\\ &= 25 \\end{aligned}" },
     { question: "-30 \\div (-6) + 4", choices: ["-1", "1", "-9", "9"], answer: "9", process: "\\begin{aligned} & -30 \\div (-6) + 4 \\\\ &= 5 + 4 \\\\ &= 9 \\end{aligned}" },
     { question: "8 - 6 \\times (-4)", choices: ["-8", "8", "-32", "32"], answer: "32", process: "\\begin{aligned} & 8 - 6 \\times (-4) \\\\ &= 8 - (-24) \\\\ &= 32 \\end{aligned}" },
     { question: "-7 - 14 \\div (-7)", choices: ["3", "-3", "-9", "-5"], answer: "-5", process: "\\begin{aligned} & -7 - 14 \\div (-7) \\\\ &= -7 - (-2) \\\\ &= -5 \\end{aligned}" },
@@ -285,10 +285,10 @@ const fullQuizDataBank = [
     { question: "-40 \\div 8 - 5", choices: ["-1", "1", "0", "-10"], answer: "-10", process: "\\begin{aligned} & -40 \\div 8 - 5 \\\\ &= -5 - 5 \\\\ &= -10 \\end{aligned}" },
     { question: "12 - 9 + (-3)", choices: ["-6", "6", "24", "0"], answer: "0", process: "\\begin{aligned} & 12 - 9 + (-3) \\\\ &= 3 - 3 \\\\ &= 0 \\end{aligned}" },
     { question: "-5 \\times 6 + 3", choices: ["-15", "15", "-33", "-27"], answer: "-27", process: "\\begin{aligned} & -5 \\times 6 + 3 \\\\ &= -30 + 3 \\\\ &= -27 \\end{aligned}" },
-    { question: "35 \\div (-7) - 5", choices: ["-2", "2", "0", "-10"], answer: "-10", process: "\\begin{aligned} & 35 \\div (-7) - 5 \\\\ &= -5 - 5 \\\\ &= -10 \\end{aligned}" },
+    { question: "35 \\div (-7) - 5", choices: ["-2", "2", "1", "-10"], answer: "-10", process: "\\begin{aligned} & 35 \\div (-7) - 5 \\\\ &= -5 - 5 \\\\ &= -10 \\end{aligned}" },
     { question: "1 - (-12) + 4", choices: ["-15", "7", "9", "17"], answer: "17", process: "\\begin{aligned} & 1 - (-12) + 4 \\\\ &= 1 + 12 + 4 \\\\ &= 17 \\end{aligned}" },
     { question: "4 \\times (-7) - 9", choices: ["-52", "52", "20", "-37"], answer: "-37", process: "\\begin{aligned} & 4 \\times (-7) - 9 \\\\ &= -28 - 9 \\\\ &= -37 \\end{aligned}" },
-    { question: "-48 \\div (-8) + 6", choices: ["0", "-1", "1", "12"], answer: "12", process: "\\begin{aligned} & -48 \\div (-8) + 6 \\\\ &= 6 + 6 \\\\ &= 12 \\end{aligned}" },
+    { question: "-48 \\div (-8) + 6", choices: ["0", "-2", "2", "12"], answer: "12", process: "\\begin{aligned} & -48 \\div (-8) + 6 \\\\ &= 6 + 6 \\\\ &= 12 \\end{aligned}" },
     { question: "5 - 9 \\times 3", choices: ["-12", "12", "42", "-22"], answer: "-22", process: "\\begin{aligned} & 5 - 9 \\times 3 \\\\ &= 5 - 27 \\\\ &= -22 \\end{aligned}" },
     { question: "-16 - (-5) + 3", choices: ["-24", "-14", "24", "-8"], answer: "-8", process: "\\begin{aligned} & -16 - (-5) + 3 \\\\ &= -16 + 5 + 3 \\\\ &= -11 + 3 \\\\ &= -8 \\end{aligned}" },
     { question: "18 + 3 \\times (-5)", choices: ["-75", "75", "-3", "3"], answer: "3", process: "\\begin{aligned} & 18 + 3 \\times (-5) \\\\ &= 18 - 15 \\\\ &= 3 \\end{aligned}" },
@@ -545,6 +545,7 @@ const fullQuizDataBank = [
 
 </body>
 </html>
+
 
 
 
