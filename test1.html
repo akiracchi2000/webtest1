@@ -451,9 +451,13 @@ const fullQuizDataBank = [
         function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
             
-            const choicesHtml = currentQuestion.choices.map(choice => 
-                `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`
-            ).join('');
+            // ★変更点： onclick属性に渡す文字列から $ を除去（またはエスケープ）し、
+            // 表示用のHTMLにはそのまま $ を含める
+            const choicesHtml = currentQuestion.choices.map(choice => {
+                // onclick属性用に $ を除去した文字列を作成
+                const onclickChoice = choice.replace(/\$/g, ''); 
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+            }).join('');
 
             questionArea.innerHTML = `
                 <div class="question-block">
@@ -466,9 +470,17 @@ const fullQuizDataBank = [
                 </div>
             `;
             
+            // 問題文をKaTeXでレンダリング
             const problemTextElement = document.getElementById('problem-text');
             katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
+
+            // ★追加：各選択肢のテキストをKaTeXでレンダリング
+            const choiceElements = questionArea.querySelectorAll('.choice');
+            choiceElements.forEach(element => {
+                katex.render(element.textContent, element, { throwOnError: false, displayMode: false }); // displayMode: false でインライン表示
+            });
             
+            // タイマー開始
             questionStartTime = Date.now();
             startTimer();
         }
@@ -562,6 +574,7 @@ const fullQuizDataBank = [
 
 </body>
 </html>
+
 
 
 
