@@ -83,6 +83,15 @@
        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
        /* background-color は各レベルで指定するので削除 */
     }
+        
+    nav li {
+        margin-bottom: 1em; /* 各ボタンの下の間隔 */
+    }
+
+    /* ★ カテゴリー間のスペースを追加 ★ */
+    .category-separator {
+        margin-top: 2.5em; /* 上のボタンとの間隔を通常より広くする */
+    }
     </style>
 </head>
 <body>
@@ -98,6 +107,7 @@
                     <a href="./test2.html" class="level-advanced">正負の数計算タイムアタック（上級）</a>
                 </li>
                 <li>
+                <li class="category-separator">
                     <a href="./test3.html" class="level-beginner">1次式の文字式の整理タイムアタック（初級）</a>
                 </li>
                 <li>
