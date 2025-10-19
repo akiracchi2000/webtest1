@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>計算テスト (モード選択)</title>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
+
+    <style>
+        /* ページの基本スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            transition: background-color 0.5s ease;
+        }
+        
+        body.timer-warning {
+            background-color: #ffebee;
+        }
+
+        /* ===== モード選択画面のスタイル ===== */
+        #mode-selection {
+            text-align: center;
+            background: #fff;
+            padding: 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #mode-selection h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #normal-mode-btn {
+            background-color: #3498db;
+        }
+        #musou-mode-btn {
+            background-color: #c0392b;
+        }
+
+#musou-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('./hannya.png');
+            background-repeat: repeat;   /* 画像を繰り返して表示 */
+            background-size: 100px;      /* 画像のサイズを小さく設定 */
+            background-position: center; /* 念のため中央配置も残しておく */
+            opacity: 0.15;
+            z-index: -1;
+        }        /* クイズ全体のコンテナ */
+        .quiz-container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .timer-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            margin-bottom: 1.5em;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            border-radius: 15px;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+        .timer-bar.warning {
+            background-color: #dc3545;
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin: 0 0 1em 0;
+        }
+
+        .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
+        .choice:hover { background-color: #d1d9e0; }
+        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .choices.answered { pointer-events: none; }
+        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+        .feedback-area { margin-top: 1.5em; min-height: 150px; }
+        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
+        .feedback-message.correct-feedback { color: #28a745; }
+        .feedback-message.incorrect-feedback { color: #dc3545; }
+        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
+        .katex-display { text-align: left !important; }
+        .controls { text-align: center; margin-top: 1em; height: 50px; }
+        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #next-btn:hover { background-color: #2980b9; }
+        #results { text-align: center; }
+        #results h2 { color: #2c3e50; }
+        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
+        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="mode-selection">
+        <h1>モードを選択</h1>
+        <div class="mode-buttons">
+            <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
+            <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
+        </div>
+        <!-- <p style="margin-top: 2em; color: #6c757d;">
+            ノーマル: 15秒 / 警告5秒<br>
+            無双: 5秒 / 警告3秒
+        </p> -->
+    </div>
+
+    <div class="quiz-container hidden" id="quiz-main">
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+            <span class="timer-text" id="timer-text"></span>
+        </div>
+        
+        <h1>計算テスト</h1>
+        <div id="question-area"></div>
+        
+        <div id="results" class="hidden">
+            <h2>テスト終了！</h2>
+            <p id="score"></p>
+            <p id="time-info"></p>
+            <p id="rank-info"></p>
+            <p class="sub-message">お疲れ様でした！</p>
+        </div>
+        
+        <div class="controls">
+            <button id="next-btn" class="hidden">次の問題へ</button>
+        </div>
+    </div>
+
+    <div id="musou-background" class="hidden"></div>
+
+
+    <script>
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★ ここに、ご自身で作成した問題データを貼り付けてください ★
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ===== 全100問の問題データバンク (3項計算・整数選択肢・左から計算トラップ付き・選択肢修正版) =====
+const fullQuizDataBank = [
+    // --- 【1番目が正解の問題】 (25問) ---
+    { question: "10 - 2 \\times 3", choices: ["4", "24", "16", "1"], answer: "4", process: "\\begin{aligned} & 10 - 2 \\times 3 \\\\ &= 10 - 6 \\\\ &= 4 \\end{aligned}" },
+    { question: "-8 + 12 \\div 2", choices: ["-2", "2", "8", "-14"], answer: "-2", process: "\\begin{aligned} & -8 + 12 \\div 2 \\\\ &= -8 + 6 \\\\ &= -2 \\end{aligned}" },
+    { question: "7 - (-4) \\times 2", choices: ["15", "22", "6", "-1"], answer: "15", process: "\\begin{aligned} & 7 - (-4) \\times 2 \\\\ &= 7 - (-8) \\\\ &= 15 \\end{aligned}" },
+    { question: "(-15) \\div 3 + 5", choices: ["0", "-10", "10", "2"], answer: "0", process: "\\begin{aligned} & (-15) \\div 3 + 5 \\\\ &= -5 + 5 \\\\ &= 0 \\end{aligned}" },
+    { question: "6 + (-9) - 3", choices: ["-6", "0", "12", "-18"], answer: "-6", process: "\\begin{aligned} & 6 + (-9) - 3 \\\\ &= -3 - 3 \\\\ &= -6 \\end{aligned}" },
+    { question: "5 \\times 4 - (-5)", choices: ["25", "15", "-25", "5"], answer: "25", process: "\\begin{aligned} & 5 \\times 4 - (-5) \\\\ &= 20 + 5 \\\\ &= 25 \\end{aligned}" },
+    { question: "-16 \\div (-2) + 7", choices: ["15", "1", "9", "-15"], answer: "15", process: "\\begin{aligned} & -16 \\div (-2) + 7 \\\\ &= 8 + 7 \\\\ &= 15 \\end{aligned}" },
+    { question: "9 - 5 \\times (-3)", choices: ["24", "-12", "-24", "12"], answer: "24", process: "\\begin{aligned} & 9 - 5 \\times (-3) \\\\ &= 9 - (-15) \\\\ &= 24 \\end{aligned}" },
+    { question: "-8 - 10 \\div (-2)", choices: ["-3", "9", "-9", "-13"], answer: "-3", process: "\\begin{aligned} & -8 - 10 \\div (-2) \\\\ &= -8 - (-5) \\\\ &= -3 \\end{aligned}" },
+    { question: "14 + 6 \\times (-2)", choices: ["2", "26", "-40", "-2"], answer: "2", process: "\\begin{aligned} & 14 + 6 \\times (-2) \\\\ &= 14 - 12 \\\\ &= 2 \\end{aligned}" },
+    { question: "4 \\times (-8) + 9", choices: ["-23", "-37", "23", "37"], answer: "-23", process: "\\begin{aligned} & 4 \\times (-8) + 9 \\\\ &= -32 + 9 \\\\ &= -23 \\end{aligned}" },
+    { question: "-21 \\div 7 - 4", choices: ["-7", "-1", "1", "7"], answer: "-7", process: "\\begin{aligned} & -21 \\div 7 - 4 \\\\ &= -3 - 4 \\\\ &= -7 \\end{aligned}" },
+    { question: "16 - 9 + (-6)", choices: ["1", "13", "31", "-1"], answer: "1", process: "\\begin{aligned} & 16 - 9 + (-6) \\\\ &= 7 - 6 \\\\ &= 1 \\end{aligned}" },
+    { question: "-8 \\times 3 + 7", choices: ["-17", "-31", "17", "32"], answer: "-17", process: "\\begin{aligned} & -8 \\times 3 + 7 \\\\ &= -24 + 7 \\\\ &= -17 \\end{aligned}" },
+    { question: "24 \\div (-6) - 2", choices: ["-6", "-2", "2", "6"], answer: "-6", process: "\\begin{aligned} & 24 \\div (-6) - 2 \\\\ &= -4 - 2 \\\\ &= -6 \\end{aligned}" },
+    { question: "5 - (-7) + 4", choices: ["16", "6", "-6", "8"], answer: "16", process: "\\begin{aligned} & 5 - (-7) + 4 \\\\ &= 5 + 7 + 4 \\\\ &= 16 \\end{aligned}" },
+    { question: "3 \\times (-7) - 6", choices: ["-27", "-15", "15", "27"], answer: "-27", process: "\\begin{aligned} & 3 \\times (-7) - 6 \\\\ &= -21 - 6 \\\\ &= -27 \\end{aligned}" },
+    { question: "-28 \\div (-4) + 8", choices: ["15", "-1", "1", "-15"], answer: "15", process: "\\begin{aligned} & -28 \\div (-4) + 8 \\\\ &= 7 + 8 \\\\ &= 15 \\end{aligned}" },
+    { question: "2 - 8 \\times 4", choices: ["-30", "-24", "24", "30"], answer: "-30", process: "\\begin{aligned} & 2 - 8 \\times 4 \\\\ &= 2 - 32 \\\\ &= -30 \\end{aligned}" },
+    { question: "-12 - (-8) + 3", choices: ["-1", "-17", "23", "-7"], answer: "-1", process: "\\begin{aligned} & -12 - (-8) + 3 \\\\ &= -12 + 8 + 3 \\\\ &= -4 + 3 \\\\ &= -1 \\end{aligned}" },
+    { question: "11 + 7 \\times (-2)", choices: ["-3", "-36", "3", "36"], answer: "-3", process: "\\begin{aligned} & 11 + 7 \\times (-2) \\\\ &= 11 - 14 \\\\ &= -3 \\end{aligned}" },
+    { question: "-32 \\div 8 - 4", choices: ["-8", "0", "8", "-4"], answer: "-8", process: "\\begin{aligned} & -32 \\div 8 - 4 \\\\ &= -4 - 4 \\\\ &= -8 \\end{aligned}" },
+    { question: "7 - 12 + 5", choices: ["0", "10", "24", "-10"], answer: "0", process: "\\begin{aligned} & 7 - 12 + 5 \\\\ &= -5 + 5 \\\\ &= 0 \\end{aligned}" },
+    { question: "5 \\times (-7) + 6", choices: ["-29", "-41", "29", "41"], answer: "-29", process: "\\begin{aligned} & 5 \\times (-7) + 6 \\\\ &= -35 + 6 \\\\ &= -29 \\end{aligned}" },
+    { question: "25 \\div (-5) - 1", choices: ["-6", "4", "-4", "6"], answer: "-6", process: "\\begin{aligned} & 25 \\div (-5) - 1 \\\\ &= -5 - 1 \\\\ &= -6 \\end{aligned}" },
+    // --- 【2番目が正解の問題】 (25問) ---
+    { question: "14 - 4 \\times 2", choices: ["20", "6", "12", "18"], answer: "6", process: "\\begin{aligned} & 14 - 4 \\times 2 \\\\ &= 14 - 8 \\\\ &= 6 \\end{aligned}" },
+    { question: "-6 + 10 \\div (-5)", choices: ["-1", "-8", "8", "-4"], answer: "-8", process: "\\begin{aligned} & -6 + 10 \\div (-5) \\\\ &= -6 - 2 \\\\ &= -8 \\end{aligned}" },
+    { question: "3 - (-2) \\times 7", choices: ["35", "17", "-11", "11"], answer: "17", process: "\\begin{aligned} & 3 - (-2) \\times 7 \\\\ &= 3 - (-14) \\\\ &= 17 \\end{aligned}" },
+    { question: "(-20) \\div 4 + 1", choices: ["-5", "-4", "6", "-6"], answer: "-4", process: "\\begin{aligned} & (-20) \\div 4 + 1 \\\\ &= -5 + 1 \\\\ &= -4 \\end{aligned}" },
+    { question: "4 + (-12) - 3", choices: ["-5", "-11", "11", "13"], answer: "-11", process: "\\begin{aligned} & 4 + (-12) - 3 \\\\ &= -8 - 3 \\\\ &= -11 \\end{aligned}" },
+    { question: "7 \\times 3 - (-6)", choices: ["15", "27", "21", "63"], answer: "27", process: "\\begin{aligned} & 7 \\times 3 - (-6) \\\\ &= 21 + 6 \\\\ &= 27 \\end{aligned}" },
+    { question: "-21 \\div (-3) + 8", choices: ["-1", "15", "1", "-15"], answer: "15", process: "\\begin{aligned} & -21 \\div (-3) + 8 \\\\ &= 7 + 8 \\\\ &= 15 \\end{aligned}" },
+    { question: "10 - 3 \\times (-5)", choices: ["-35", "25", "5", "35"], answer: "25", process: "\\begin{aligned} & 10 - 3 \\times (-5) \\\\ &= 10 - (-15) \\\\ &= 25 \\end{aligned}" },
+    { question: "-9 - 18 \\div (-3)", choices: ["9", "-3", "3", "-15"], answer: "-3", process: "\\begin{aligned} & -9 - 18 \\div (-3) \\\\ &= -9 - (-6) \\\\ &= -3 \\end{aligned}" },
+    { question: "16 + 5 \\times (-3)", choices: ["-63", "1", "31", "-1"], answer: "1", process: "\\begin{aligned} & 16 + 5 \\times (-3) \\\\ &= 16 - 15 \\\\ &= 1 \\end{aligned}" },
+    { question: "6 \\times (-5) + 4", choices: ["-6", "-26", "26", "6"], answer: "-26", process: "\\begin{aligned} & 6 \\times (-5) + 4 \\\\ &= -30 + 4 \\\\ &= -26 \\end{aligned}" },
+    { question: "-28 \\div 7 - 2", choices: ["-3", "-6", "6", "2"], answer: "-6", process: "\\begin{aligned} & -28 \\div 7 - 2 \\\\ &= -4 - 2 \\\\ &= -6 \\end{aligned}" },
+    { question: "13 - 8 + (-2)", choices: ["-3", "3", "23", "7"], answer: "3", process: "\\begin{aligned} & 13 - 8 + (-2) \\\\ &= 5 - 2 \\\\ &= 3 \\end{aligned}" },
+    { question: "-6 \\times 4 + 9", choices: ["-30", "-15", "15", "30"], answer: "-15", process: "\\begin{aligned} & -6 \\times 4 + 9 \\\\ &= -24 + 9 \\\\ &= -15 \\end{aligned}" },
+    { question: "27 \\div (-3) - 4", choices: ["-3", "-13", "13", "5"], answer: "-13", process: "\\begin{aligned} & 27 \\div (-3) - 4 \\\\ &= -9 - 4 \\\\ &= -13 \\end{aligned}" },
+    { question: "2 - (-9) + 5", choices: ["-12", "16", "6", "-2"], answer: "16", process: "\\begin{aligned} & 2 - (-9) + 5 \\\\ &= 2 + 9 + 5 \\\\ &= 16 \\end{aligned}" },
+    { question: "6 \\times (-7) - 8", choices: ["-84", "-50", "50", "34"], answer: "-50", process: "\\begin{aligned} & 6 \\times (-7) - 8 \\\\ &= -42 - 8 \\\\ &= -50 \\end{aligned}" },
+    { question: "-36 \\div (-9) + 2", choices: ["-2", "6", "-6", "3"], answer: "6", process: "\\begin{aligned} & -36 \\div (-9) + 2 \\\\ &= 4 + 2 \\\\ &= 6 \\end{aligned}" },
+    { question: "3 - 10 \\times 2", choices: ["-14", "-17", "17", "23"], answer: "-17", process: "\\begin{aligned} & 3 - 10 \\times 2 \\\\ &= 3 - 20 \\\\ &= -17 \\end{aligned}" },
+    { question: "-14 - (-7) + 3", choices: ["-18", "-4", "24", "10"], answer: "-4", process: "\\begin{aligned} & -14 - (-7) + 3 \\\\ &= -14 + 7 + 3 \\\\ &= -7 + 3 \\\\ &= -4 \\end{aligned}" },
+    { question: "12 + 8 \\times (-1)", choices: ["-20", "4", "-4", "20"], answer: "4", process: "\\begin{aligned} & 12 + 8 \\times (-1) \\\\ &= 12 - 8 \\\\ &= 4 \\end{aligned}" },
+    { question: "-42 \\div 6 - 3", choices: ["-7", "-10", "10", "4"], answer: "-10", process: "\\begin{aligned} & -42 \\div 6 - 3 \\\\ &= -7 - 3 \\\\ &= -10 \\end{aligned}" },
+    { question: "10 - 15 + 4", choices: ["-9", "-1", "29", "1"], answer: "-1", process: "\\begin{aligned} & 10 - 15 + 4 \\\\ &= -5 + 4 \\\\ &= -1 \\end{aligned}" },
+    { question: "2 \\times (-9) + 5", choices: ["-8", "-13", "13", "28"], answer: "-13", process: "\\begin{aligned} & 2 \\times (-9) + 5 \\\\ &= -18 + 5 \\\\ &= -13 \\end{aligned}" },
+    { question: "30 \\div (-6) - 5", choices: ["-2", "-10", "10", "1"], answer: "-10", process: "\\begin{aligned} & 30 \\div (-6) - 5 \\\\ &= -5 - 5 \\\\ &= -10 \\end{aligned}" },
+    // --- 【3番目が正解の問題】 (25問) ---
+    { question: "16 - 2 \\times 7", choices: ["98", "14", "2", "30"], answer: "2", process: "\\begin{aligned} & 16 - 2 \\times 7 \\\\ &= 16 - 14 \\\\ &= 2 \\end{aligned}" },
+    { question: "-10 + 15 \\div (-3)", choices: ["1", "-25", "-15", "5"], answer: "-15", process: "\\begin{aligned} & -10 + 15 \\div (-3) \\\\ &= -10 - 5 \\\\ &= -15 \\end{aligned}" },
+    { question: "5 - (-3) \\times 6", choices: ["48", "12", "23", "-13"], answer: "23", process: "\\begin{aligned} & 5 - (-3) \\times 6 \\\\ &= 5 - (-18) \\\\ &= 23 \\end{aligned}" },
+    { question: "(-24) \\div 4 + 2", choices: ["-5", "8", "-4", "-8"], answer: "-4", process: "\\begin{aligned} & (-24) \\div 4 + 2 \\\\ &= -6 + 2 \\\\ &= -4 \\end{aligned}" },
+    { question: "3 + (-15) - 5", choices: ["-7", "-18", "-17", "13"], answer: "-17", process: "\\begin{aligned} & 3 + (-15) - 5 \\\\ &= -12 - 5 \\\\ &= -17 \\end{aligned}" },
+    { question: "6 \\times 2 - (-9)", choices: ["-42", "3", "21", "-21"], answer: "21", process: "\\begin{aligned} & 6 \\times 2 - (-9) \\\\ &= 12 + 9 \\\\ &= 21 \\end{aligned}" },
+    { question: "-25 \\div (-5) + 3", choices: ["-2", "2", "8", "-8"], answer: "8", process: "\\begin{aligned} & -25 \\div (-5) + 3 \\\\ &= 5 + 3 \\\\ &= 8 \\end{aligned}" },
+    { question: "7 - 6 \\times (-2)", choices: ["-2", "2", "19", "-19"], answer: "19", process: "\\begin{aligned} & 7 - 6 \\times (-2) \\\\ &= 7 - (-12) \\\\ &= 19 \\end{aligned}" },
+    { question: "-4 - 20 \\div (-4)", choices: ["6", "-9", "1", "9"], answer: "1", process: "\\begin{aligned} & -4 - 20 \\div (-4) \\\\ &= -4 - (-5) \\\\ &= 1 \\end{aligned}" },
+    { question: "12 + 9 \\times (-1)", choices: ["-21", "21", "3", "-3"], answer: "3", process: "\\begin{aligned} & 12 + 9 \\times (-1) \\\\ &= 12 - 9 \\\\ &= 3 \\end{aligned}" },
+    { question: "8 \\times (-3) + 5", choices: ["-16", "16", "-19", "19"], answer: "-19", process: "\\begin{aligned} & 8 \\times (-3) + 5 \\\\ &= -24 + 5 \\\\ &= -19 \\end{aligned}" },
+    { question: "-36 \\div 9 - 4", choices: ["-3", "0", "-8", "8"], answer: "-8", process: "\\begin{aligned} & -36 \\div 9 - 4 \\\\ &= -4 - 4 \\\\ &= -8 \\end{aligned}" },
+    { question: "15 - 10 + (-5)", choices: ["-20", "10", "0", "20"], answer: "0", process: "\\begin{aligned} & 15 - 10 + (-5) \\\\ &= 5 - 5 \\\\ &= 0 \\end{aligned}" },
+    { question: "-4 \\times 6 + 7", choices: ["-31", "31", "-17", "17"], answer: "-17", process: "\\begin{aligned} & -4 \\times 6 + 7 \\\\ &= -24 + 7 \\\\ &= -17 \\end{aligned}" },
+    { question: "30 \\div (-10) - 3", choices: ["-1", "1", "-6", "6"], answer: "-6", process: "\\begin{aligned} & 30 \\div (-10) - 3 \\\\ &= -3 - 3 \\\\ &= -6 \\end{aligned}" },
+    { question: "4 - (-8) + 2", choices: ["-6", "10", "14", "-2"], answer: "14", process: "\\begin{aligned} & 4 - (-8) + 2 \\\\ &= 4 + 8 + 2 \\\\ &= 14 \\end{aligned}" },
+    { question: "5 \\times (-9) - 7", choices: ["-11", "11", "-52", "52"], answer: "-52", process: "\\begin{aligned} & 5 \\times (-9) - 7 \\\\ &= -45 - 7 \\\\ &= -52 \\end{aligned}" },
+    { question: "-42 \\div (-7) + 5", choices: ["-1", "1", "11", "-11"], answer: "11", process: "\\begin{aligned} & -42 \\div (-7) + 5 \\\\ &= 6 + 5 \\\\ &= 11 \\end{aligned}" },
+    { question: "6 - 7 \\times 4", choices: ["-4", "4", "-22", "22"], answer: "-22", process: "\\begin{aligned} & 6 - 7 \\times 4 \\\\ &= 6 - 28 \\\\ &= -22 \\end{aligned}" },
+    { question: "-13 - (-6) + 4", choices: ["-15", "15", "-3", "-11"], answer: "-3", process: "\\begin{aligned} & -13 - (-6) + 4 \\\\ &= -13 + 6 + 4 \\\\ &= -7 + 4 \\\\ &= -3 \\end{aligned}" },
+    { question: "15 + 4 \\times (-3)", choices: ["-57", "57", "3", "-3"], answer: "3", process: "\\begin{aligned} & 15 + 4 \\times (-3) \\\\ &= 15 - 12 \\\\ &= 3 \\end{aligned}" },
+    { question: "-49 \\div 7 - 6", choices: ["-1", "1", "-13", "13"], answer: "-13", process: "\\begin{aligned} & -49 \\div 7 - 6 \\\\ &= -7 - 6 \\\\ &= -13 \\end{aligned}" },
+    { question: "8 - 11 + 6", choices: ["-9", "9", "3", "-3"], answer: "3", process: "\\begin{aligned} & 8 - 11 + 6 \\\\ &= -3 + 6 \\\\ &= 3 \\end{aligned}" },
+    { question: "3 \\times (-10) + 8", choices: ["-6", "6", "-22", "22"], answer: "-22", process: "\\begin{aligned} & 3 \\times (-10) + 8 \\\\ &= -30 + 8 \\\\ &= -22 \\end{aligned}" },
+    { question: "35 \\div (-5) - 2", choices: ["-5", "5", "-9", "9"], answer: "-9", process: "\\begin{aligned} & 35 \\div (-5) - 2 \\\\ &= -7 - 2 \\\\ &= -9 \\end{aligned}" },
+    // --- 【4番目が正解の問題】 (25問) ---
+    { question: "18 - 5 \\times 3", choices: ["39", "10", "2", "3"], answer: "3", process: "\\begin{aligned} & 18 - 5 \\times 3 \\\\ &= 18 - 15 \\\\ &= 3 \\end{aligned}" },
+    { question: "-12 + 16 \\div (-4)", choices: ["-1", "1", "-20", "-16"], answer: "-16", process: "\\begin{aligned} & -12 + 16 \\div (-4) \\\\ &= -12 - 4 \\\\ &= -16 \\end{aligned}" },
+    { question: "2 - (-5) \\times 4", choices: ["28", "-12", "18", "22"], answer: "22", process: "\\begin{aligned} & 2 - (-5) \\times 4 \\\\ &= 2 - (-20) \\\\ &= 22 \\end{aligned}" },
+    { question: "(-27) \\div 3 + 6", choices: ["-2", "3", "15", "-3"], answer: "-3", process: "\\begin{aligned} & (-27) \\div 3 + 6 \\\\ &= -9 + 6 \\\\ &= -3 \\end{aligned}" },
+    { question: "5 + (-14) - 2", choices: ["-7", "-12", "17", "-11"], answer: "-11", process: "\\begin{aligned} & 5 + (-14) - 2 \\\\ &= -9 - 2 \\\\ &= -11 \\end{aligned}" },
+    { question: "9 \\times 2 - (-7)", choices: ["11", "24", "4", "25"], answer: "25", process: "\\begin{aligned} & 9 \\times 2 - (-7) \\\\ &= 18 + 7 \\\\ &= 25 \\end{aligned}" },
+    { question: "-30 \\div (-6) + 4", choices: ["-1", "1", "-9", "9"], answer: "9", process: "\\begin{aligned} & -30 \\div (-6) + 4 \\\\ &= 5 + 4 \\\\ &= 9 \\end{aligned}" },
+    { question: "8 - 6 \\times (-4)", choices: ["-8", "8", "-32", "32"], answer: "32", process: "\\begin{aligned} & 8 - 6 \\times (-4) \\\\ &= 8 - (-24) \\\\ &= 32 \\end{aligned}" },
+    { question: "-7 - 14 \\div (-7)", choices: ["3", "-3", "-9", "-5"], answer: "-5", process: "\\begin{aligned} & -7 - 14 \\div (-7) \\\\ &= -7 - (-2) \\\\ &= -5 \\end{aligned}" },
+    { question: "13 + 12 \\times (-1)", choices: ["-25", "25", "-1", "1"], answer: "1", process: "\\begin{aligned} & 13 + 12 \\times (-1) \\\\ &= 13 - 12 \\\\ &= 1 \\end{aligned}" },
+    { question: "9 \\times (-2) + 5", choices: ["-27", "27", "23", "-13"], answer: "-13", process: "\\begin{aligned} & 9 \\times (-2) + 5 \\\\ &= -18 + 5 \\\\ &= -13 \\end{aligned}" },
+    { question: "-40 \\div 8 - 5", choices: ["-1", "1", "0", "-10"], answer: "-10", process: "\\begin{aligned} & -40 \\div 8 - 5 \\\\ &= -5 - 5 \\\\ &= -10 \\end{aligned}" },
+    { question: "12 - 9 + (-3)", choices: ["-6", "6", "24", "0"], answer: "0", process: "\\begin{aligned} & 12 - 9 + (-3) \\\\ &= 3 - 3 \\\\ &= 0 \\end{aligned}" },
+    { question: "-5 \\times 6 + 3", choices: ["-15", "15", "-33", "-27"], answer: "-27", process: "\\begin{aligned} & -5 \\times 6 + 3 \\\\ &= -30 + 3 \\\\ &= -27 \\end{aligned}" },
+    { question: "35 \\div (-7) - 5", choices: ["-2", "2", "1", "-10"], answer: "-10", process: "\\begin{aligned} & 35 \\div (-7) - 5 \\\\ &= -5 - 5 \\\\ &= -10 \\end{aligned}" },
+    { question: "1 - (-12) + 4", choices: ["-15", "7", "9", "17"], answer: "17", process: "\\begin{aligned} & 1 - (-12) + 4 \\\\ &= 1 + 12 + 4 \\\\ &= 17 \\end{aligned}" },
+    { question: "4 \\times (-7) - 9", choices: ["-52", "52", "20", "-37"], answer: "-37", process: "\\begin{aligned} & 4 \\times (-7) - 9 \\\\ &= -28 - 9 \\\\ &= -37 \\end{aligned}" },
+    { question: "-48 \\div (-8) + 6", choices: ["0", "-2", "2", "12"], answer: "12", process: "\\begin{aligned} & -48 \\div (-8) + 6 \\\\ &= 6 + 6 \\\\ &= 12 \\end{aligned}" },
+    { question: "5 - 9 \\times 3", choices: ["-12", "12", "42", "-22"], answer: "-22", process: "\\begin{aligned} & 5 - 9 \\times 3 \\\\ &= 5 - 27 \\\\ &= -22 \\end{aligned}" },
+    { question: "-16 - (-5) + 3", choices: ["-24", "-14", "24", "-8"], answer: "-8", process: "\\begin{aligned} & -16 - (-5) + 3 \\\\ &= -16 + 5 + 3 \\\\ &= -11 + 3 \\\\ &= -8 \\end{aligned}" },
+    { question: "18 + 3 \\times (-5)", choices: ["-75", "75", "-3", "3"], answer: "3", process: "\\begin{aligned} & 18 + 3 \\times (-5) \\\\ &= 18 - 15 \\\\ &= 3 \\end{aligned}" },
+    { question: "-54 \\div 9 - 3", choices: ["-3", "3", "6", "-9"], answer: "-9", process: "\\begin{aligned} & -54 \\div 9 - 3 \\\\ &= -6 - 3 \\\\ &= -9 \\end{aligned}" },
+    { question: "6 - 15 + 7", choices: ["-16", "16", "2", "-2"], answer: "-2", process: "\\begin{aligned} & 6 - 15 + 7 \\\\ &= -9 + 7 \\\\ &= -2 \\end{aligned}" },
+    { question: "4 \\times (-10) + 9", choices: ["-4", "4", "49", "-31"], answer: "-31", process: "\\begin{aligned} & 4 \\times (-10) + 9 \\\\ &= -40 + 9 \\\\ &= -31 \\end{aligned}" },
+    { question: "42 \\div (-6) - 1", choices: ["-6", "6", "8", "-8"], answer: "-8", process: "\\begin{aligned} & 42 \\div (-6) - 1 \\\\ &= -7 - 1 \\\\ &= -8 \\end{aligned}" }
+];
+        // ===== グローバル変数定義 =====
+        const modeSelectionScreen = document.getElementById('mode-selection');
+        const quizMainScreen = document.getElementById('quiz-main');
+        const musouBackground = document.getElementById('musou-background');
+
+        const questionArea = document.getElementById('question-area');
+        const nextButton = document.getElementById('next-btn');
+        const resultsArea = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
+        const timerBar = document.getElementById('timer-bar');
+        const timerText = document.getElementById('timer-text');
+        
+        let selectedQuizData;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        let timerInterval;
+        let timeLeft;
+        let TIME_LIMIT;
+        let WARNING_TIME;
+        
+        let totalSolveTime = 0;
+        let questionStartTime;
+
+        // ===== モード選択とクイズ開始の処理 =====
+        document.getElementById('normal-mode-btn').addEventListener('click', () => {
+            startGame({
+                timeLimit: 15,
+                warningTime: 5,
+                isMusou: false
+            });
+        });
+
+        document.getElementById('musou-mode-btn').addEventListener('click', () => {
+            startGame({
+                timeLimit: 5,
+                warningTime: 3,
+                isMusou: true
+            });
+        });
+
+        function startGame(settings) {
+            TIME_LIMIT = settings.timeLimit;
+            WARNING_TIME = settings.warningTime;
+
+            if (settings.isMusou) {
+                musouBackground.classList.remove('hidden');
+            }
+
+            // 問題をシャッフルして10問選ぶ
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            const shuffledData = shuffleArray(fullQuizDataBank);
+            selectedQuizData = shuffledData.slice(0, 10);
+
+            // 画面切り替え
+            modeSelectionScreen.classList.add('hidden');
+            quizMainScreen.classList.remove('hidden');
+
+            // クイズ開始
+            showQuestion();
+        }
+
+
+        // ===== タイマー関数 =====
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('warning');
+            document.body.classList.remove('timer-warning');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+
+                if (timeLeft <= WARNING_TIME) {
+                    timerBar.classList.add('warning');
+                    document.body.classList.add('timer-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function timeUp() {
+            stopTimer();
+            totalSolveTime += TIME_LIMIT;
+
+            const choicesContainer = questionArea.querySelector('.choices');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer;
+
+            if(choicesContainer) {
+                choicesContainer.classList.add('answered');
+            }
+
+            feedbackMessage.textContent = "時間切れ💦";
+            feedbackMessage.classList.add('incorrect-feedback');
+            feedbackMessage.classList.remove('hidden');
+
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            processDisplay.classList.remove('hidden');
+
+            Array.from(choicesContainer.children).forEach(child => {
+                if (child.innerText === correctAnswer) {
+                    child.classList.add('correct');
+                }
+            });
+
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        // ===== クイズ本体の関数 =====
+        function showQuestion() {
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            
+            const choicesHtml = currentQuestion.choices.map(choice => 
+                `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`
+            ).join('');
+
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+            
+            const problemTextElement = document.getElementById('problem-text');
+            katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
+            
+            questionStartTime = Date.now();
+            startTimer();
+        }
+
+        function selectAnswer(element, selectedChoice) {
+            stopTimer();
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            totalSolveTime += timeTaken;
+
+            const choicesContainer = element.parentElement;
+            if (choicesContainer.classList.contains('answered')) return;
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer;
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) {
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                Array.from(choicesContainer.children).forEach(child => {
+                    if (child.innerText === correctAnswer) child.classList.add('correct');
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning');
+            if (currentQuestionIndex < selectedQuizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden');
+            
+            const finalScore = score * 10;
+            const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime);
+
+            let rank = '';
+            let rankColor = '';
+
+            if (totalSeconds <= 30) {
+                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
+            } else if (totalSeconds <= 45) {
+                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
+            } else if (totalSeconds <= 60) {
+                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+            } else {
+                rank = '💪 Cランク 💪'; rankColor = '#28a745';
+            }
+
+            resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank;
+            rankInfoDisplay.style.color = rankColor;
+        }
+    </script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
