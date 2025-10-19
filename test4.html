@@ -1,1 +1,591 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>計算テスト (モード選択)</title>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
 
+    <style>
+        /* ページの基本スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            transition: background-color 0.5s ease;
+        }
+        
+        body.timer-warning {
+            background-color: #ffebee;
+        }
+
+        /* ===== モード選択画面のスタイル ===== */
+        #mode-selection {
+            text-align: center;
+            background: #fff;
+            padding: 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #mode-selection h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #normal-mode-btn {
+            background-color: #3498db;
+        }
+        #musou-mode-btn {
+            background-color: #c0392b;
+        }
+
+#musou-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('./hannya.png');
+            background-repeat: repeat;   /* 画像を繰り返して表示 */
+            background-size: 100px;      /* 画像のサイズを小さく設定 */
+            background-position: center; /* 念のため中央配置も残しておく */
+            opacity: 0.15;
+            z-index: -1;
+        }        /* クイズ全体のコンテナ */
+        .quiz-container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .timer-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            margin-bottom: 1.5em;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            border-radius: 15px;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+        .timer-bar.warning {
+            background-color: #dc3545;
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin: 0 0 1em 0;
+        }
+
+        .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
+        .choice:hover { background-color: #d1d9e0; }
+        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .choices.answered { pointer-events: none; }
+        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+        .feedback-area { margin-top: 1.5em; min-height: 150px; }
+        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
+        .feedback-message.correct-feedback { color: #28a745; }
+        .feedback-message.incorrect-feedback { color: #dc3545; }
+        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
+        .katex-display { text-align: left !important; }
+        .controls { text-align: center; margin-top: 1em; height: 50px; }
+        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #next-btn:hover { background-color: #2980b9; }
+        #results { text-align: center; }
+        #results h2 { color: #2c3e50; }
+        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
+        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        .hidden { display: none; }
+        /* ===== トップへ戻るボタンのスタイル ===== */
+        .home-btn {
+            display: inline-block; /* ボタンのように振る舞わせる */
+            margin-top: 1.5em;
+            padding: 10px 25px;
+            font-size: 1em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #6c757d; /* 落ち着いたグレー */
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .home-btn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mode-selection">
+        <h1>モードを選択</h1>
+        <div class="mode-buttons">
+            <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
+            <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
+        </div>
+        <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
+        <!-- <p style="margin-top: 2em; color: #6c757d;">
+            ノーマル: 15秒 / 警告5秒<br>
+            無双: 5秒 / 警告3秒
+        </p> -->
+    </div>
+
+    <div class="quiz-container hidden" id="quiz-main">
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+            <span class="timer-text" id="timer-text"></span>
+        </div>
+        
+        <h1>計算テスト</h1>
+        <div id="question-area"></div>
+        
+        <div id="results" class="hidden">
+            <h2>テスト終了！</h2>
+            <p id="score"></p>
+            <p id="time-info"></p>
+            <p id="rank-info"></p>
+            <p class="sub-message">お疲れ様でした！</p>
+            <a href="./index.html" class="home-btn">トップページに戻る</a>
+        </div>
+        
+        <div class="controls">
+            <button id="next-btn" class="hidden">次の問題へ</button>
+        </div>
+    </div>
+
+    <div id="musou-background" class="hidden"></div>
+
+
+    <script>
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★ ここに、ご自身で作成した問題データを貼り付けてください ★
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+// ===== 全100問の問題データバンク (2文字1次式整理・トラップ付き・正解位置均等・選択肢修正v2) =====
+const fullQuizDataBank = [
+  // --- 【1番目が正解の問題】 (25問) ---
+  { question: "$2(x + y) + 3(x - y)$", choices: ["$5x - y$", "$5x + 5y$", "$5x + y$", "$-x - y$"], answer: "$5x - y$", process: "\\begin{aligned} & 2(x + y) + 3(x - y) \\\\ &= 2x + 2y + 3x - 3y \\\\ &= (2x + 3x) + (2y - 3y) \\\\ &= 5x - y \\end{aligned}" },
+  { question: "$4(2x - y) - (x + 3y)$", choices: ["$7x - 7y$", "$7x + y$", "$9x - 7y$", "$7x - y$"], answer: "$7x - 7y$", process: "\\begin{aligned} & 4(2x - y) - (x + 3y) \\\\ &= 8x - 4y - x - 3y \\\\ &= (8x - x) + (-4y - 3y) \\\\ &= 7x - 7y \\end{aligned}" },
+  { question: "$-3(x + 2y) + 5(x - y)$", choices: ["$2x - 11y$", "$2x - y$", "$8x - 11y$", "$2x - 7y$"], answer: "$2x - 11y$", process: "\\begin{aligned} & -3(x + 2y) + 5(x - y) \\\\ &= -3x - 6y + 5x - 5y \\\\ &= (-3x + 5x) + (-6y - 5y) \\\\ &= 2x - 11y \\end{aligned}" },
+  { question: "$6(x - y) - 2(2x + y)$", choices: ["$2x - 8y$", "$4x - 8y$", "$10x - 8y$", "$2x - 4y$"], answer: "$2x - 8y$", process: "\\begin{aligned} & 6(x - y) - 2(2x + y) \\\\ &= 6x - 6y - 4x - 2y \\\\ &= (6x - 4x) + (-6y - 2y) \\\\ &= 2x - 8y \\end{aligned}" },
+  { question: "$-(3x - y) + 4(x + 2y)$", choices: ["$x + 9y$", "$x + 7y$", "$7x + 9y$", "$x - 7y$"], answer: "$x + 9y$", process: "\\begin{aligned} & -(3x - y) + 4(x + 2y) \\\\ &= -3x + y + 4x + 8y \\\\ &= (-3x + 4x) + (y + 8y) \\\\ &= x + 9y \\end{aligned}" },
+  { question: "$5(x + 3y) - 3(x - y)$", choices: ["$2x + 18y$", "$2x + 12y$", "$8x + 18y$", "$2x + 16y$"], answer: "$2x + 18y$", process: "\\begin{aligned} & 5(x + 3y) - 3(x - y) \\\\ &= 5x + 15y - 3x + 3y \\\\ &= (5x - 3x) + (15y + 3y) \\\\ &= 2x + 18y \\end{aligned}" },
+  { question: "$-2(4x - y) - (x + 5y)$", choices: ["$-9x - 3y$", "$-9x + 7y$", "$-7x - 3y$", "$-9x + 3y$"], answer: "$-9x - 3y$", process: "\\begin{aligned} & -2(4x - y) - (x + 5y) \\\\ &= -8x + 2y - x - 5y \\\\ &= (-8x - x) + (2y - 5y) \\\\ &= -9x - 3y \\end{aligned}" },
+  { question: "$7(x + y) + 2(x - 4y)$", choices: ["$9x - y$", "$9x + 3y$", "$5x - y$", "$9x - 15y$"], answer: "$9x - y$", process: "\\begin{aligned} & 7(x + y) + 2(x - 4y) \\\\ &= 7x + 7y + 2x - 8y \\\\ &= (7x + 2x) + (7y - 8y) \\\\ &= 9x - y \\end{aligned}" },
+  { question: "$3(2x + y) - 4(x - y)$", choices: ["$2x + 7y$", "$2x - y$", "$10x + 7y$", "$2x + 5y$"], answer: "$2x + 7y$", process: "\\begin{aligned} & 3(2x + y) - 4(x - y) \\\\ &= 6x + 3y - 4x + 4y \\\\ &= (6x - 4x) + (3y + 4y) \\\\ &= 2x + 7y \\end{aligned}" },
+  { question: "-(x + 5y) + 6(x - y)$", choices: ["$5x - 11y$", "$7x - 11y$", "$5x + y$", "$5x - 9y$"], answer: "$5x - 11y$", process: "\\begin{aligned} & -(x + 5y) + 6(x - y) \\\\ &= -x - 5y + 6x - 6y \\\\ &= (-x + 6x) + (-5y - 6y) \\\\ &= 5x - 11y \\end{aligned}" },
+  { question: "$8(x - y) - (3x - 2y)$", choices: ["$5x - 6y$", "$5x - 10y$", "$11x - 6y$", "$5x - 4y$"], answer: "$5x - 6y$", process: "\\begin{aligned} & 8(x - y) - (3x - 2y) \\\\ &= 8x - 8y - 3x + 2y \\\\ &= (8x - 3x) + (-8y + 2y) \\\\ &= 5x - 6y \\end{aligned}" },
+  { question: "$-4(x + 3y) + 2(x - 2y)$", choices: ["$-2x - 16y$", "$-6x - 16y$", "$-2x - 8y$", "$-2x - 10y$"], answer: "$-2x - 16y$", process: "\\begin{aligned} & -4(x + 3y) + 2(x - 2y) \\\\ &= -4x - 12y + 2x - 4y \\\\ &= (-4x + 2x) + (-12y - 4y) \\\\ &= -2x - 16y \\end{aligned}" },
+  { question: "$5(3x - y) - 2(x + y)$", choices: ["$13x - 7y$", "$13x - 3y$", "$17x - 7y$", "$13x - 5y$"], answer: "$13x - 7y$", process: "\\begin{aligned} & 5(3x - y) - 2(x + y) \\\\ &= 15x - 5y - 2x - 2y \\\\ &= (15x - 2x) + (-5y - 2y) \\\\ &= 13x - 7y \\end{aligned}" },
+  { question: "-(2x - 3y) - 6(x - y)$", choices: ["$-8x + 9y$", "$-8x - 3y$", "$4x + 9y$", "$-8x + 3y$"], answer: "$-8x + 9y$", process: "\\begin{aligned} & -(2x - 3y) - 6(x - y) \\\\ &= -2x + 3y - 6x + 6y \\\\ &= (-2x - 6x) + (3y + 6y) \\\\ &= -8x + 9y \\end{aligned}" },
+  { question: "$9(x + y) + (2x - 5y)$", choices: ["$11x + 4y$", "$11x + 14y$", "$7x + 4y$", "$11x - 4y$"], answer: "$11x + 4y$", process: "\\begin{aligned} & 9(x + y) + (2x - 5y) \\\\ &= 9x + 9y + 2x - 5y \\\\ &= (9x + 2x) + (9y - 5y) \\\\ &= 11x + 4y \\end{aligned}" },
+  { question: "$2(x - 4y) - (3x - y)$", choices: ["$-x - 7y$", "$-x - 9y$", "$5x - 7y$", "$-x - 5y$"], answer: "$-x - 7y$", process: "\\begin{aligned} & 2(x - 4y) - (3x - y) \\\\ &= 2x - 8y - 3x + y \\\\ &= (2x - 3x) + (-8y + y) \\\\ &= -x - 7y \\end{aligned}" },
+  { question: "-6(x + y) + 4(x + 2y)", choices: ["$-2x + 2y$", "$-2x + 14y$", "$-10x + 2y$", "$-2x - 6y$"], answer: "$-2x + 2y$", process: "\\begin{aligned} & -6(x + y) + 4(x + 2y) \\\\ &= -6x - 6y + 4x + 8y \\\\ &= (-6x + 4x) + (-6y + 8y) \\\\ &= -2x + 2y \\end{aligned}" },
+  { question: "$10(x - y) - 7(x - 2y)$", choices: ["$3x + 4y$", "$3x - 24y$", "$17x + 4y$", "$3x - 12y$"], answer: "$3x + 4y$", process: "\\begin{aligned} & 10(x - y) - 7(x - 2y) \\\\ &= 10x - 10y - 7x + 14y \\\\ &= (10x - 7x) + (-10y + 14y) \\\\ &= 3x + 4y \\end{aligned}" },
+  { question: "-(4x - y) + 2(3x - y)$", choices: ["$2x - y$", "$10x - y$", "$2x + y$", "$2x - 3y$"], answer: "$2x - y$", process: "\\begin{aligned} & -(4x - y) + 2(3x - y) \\\\ &= -4x + y + 6x - 2y \\\\ &= (-4x + 6x) + (y - 2y) \\\\ &= 2x - y \\end{aligned}" },
+  { question: "$3(x + 3y) - 5(x - y)$", choices: ["$-2x + 14y$", "$-2x + 4y$", "$8x + 14y$", "$-2x + 8y$"], answer: "$-2x + 14y$", process: "\\begin{aligned} & 3(x + 3y) - 5(x - y) \\\\ &= 3x + 9y - 5x + 5y \\\\ &= (3x - 5x) + (9y + 5y) \\\\ &= -2x + 14y \\end{aligned}" },
+  { question: "$7(2x - y) + (x + 6y)$", choices: ["$15x - y$", "$13x - y$", "$15x + 13y$", "$15x - 13y$"], answer: "$15x - y$", process: "\\begin{aligned} & 7(2x - y) + (x + 6y) \\\\ &= 14x - 7y + x + 6y \\\\ &= (14x + x) + (-7y + 6y) \\\\ &= 15x - y \\end{aligned}" },
+  { question: "-5(x - 2y) - (3x + y)$", choices: ["$-8x + 9y$", "$-8x + 11y$", "$-2x + 9y$", "$-8x - 9y$"], answer: "$-8x + 9y$", process: "\\begin{aligned} & -5(x - 2y) - (3x + y) \\\\ &= -5x + 10y - 3x - y \\\\ &= (-5x - 3x) + (10y - y) \\\\ &= -8x + 9y \\end{aligned}" },
+  { question: "$4(3x + y) - 11(x - y)$", choices: ["$x + 15y$", "$x - 7y$", "$23x + 15y$", "$x + 7y$"], answer: "$x + 15y$", process: "\\begin{aligned} & 4(3x + y) - 11(x - y) \\\\ &= 12x + 4y - 11x + 11y \\\\ &= (12x - 11x) + (4y + 11y) \\\\ &= x + 15y \\end{aligned}" },
+  { question: "-(9x - y) + 7(x + y)$", choices: ["$-2x + 8y$", "$-2x + 6y$", "$-16x + 8y$", "$-2x$"], answer: "$-2x + 8y$", process: "\\begin{aligned} & -(9x - y) + 7(x + y) \\\\ &= -9x + y + 7x + 7y \\\\ &= (-9x + 7x) + (y + 7y) \\\\ &= -2x + 8y \\end{aligned}" },
+  { question: "$12(x - y) - 10(x - y)$", choices: ["$2x$", "$2x - 2y$", "$22x - 22y$", "$2x - 22y$"], answer: "$2x - 2y$", process: "\\begin{aligned} & 12(x - y) - 10(x - y) \\\\ &= 12x - 12y - 10x + 10y \\\\ &= (12x - 10x) + (-12y + 10y) \\\\ &= 2x - 2y \\end{aligned}" },
+  // --- 【2番目が正解の問題】 (25問) ---
+  { question: "$3(x + y) + 4(x - y)$", choices: ["$7x + 7y$", "$7x - y$", "$7x + y$", "$-x - y$"], answer: "$7x - y$", process: "\\begin{aligned} & 3(x + y) + 4(x - y) \\\\ &= 3x + 3y + 4x - 4y \\\\ &= (3x + 4x) + (3y - 4y) \\\\ &= 7x - y \\end{aligned}" },
+  { question: "$5(2x - y) - (x + 2y)$", choices: ["$9x - 3y$", "$9x - 7y$", "$11x - 7y$", "$9x - 5y$"], answer: "$9x - 7y$", process: "\\begin{aligned} & 5(2x - y) - (x + 2y) \\\\ &= 10x - 5y - x - 2y \\\\ &= (10x - x) + (-5y - 2y) \\\\ &= 9x - 7y \\end{aligned}" },
+  { question: "$-2(x + 3y) + 6(x - y)$", choices: ["$4x - 9y$", "$4x - 12y$", "$8x - 12y$", "$4x$"], answer: "$4x - 12y$", process: "\\begin{aligned} & -2(x + 3y) + 6(x - y) \\\\ &= -2x - 6y + 6x - 6y \\\\ &= (-2x + 6x) + (-6y - 6y) \\\\ &= 4x - 12y \\end{aligned}" },
+  { question: "$7(x - y) - 3(2x + y)$", choices: ["$x - 4y$", "$x - 10y$", "$13x - 10y$", "$x - 7y$"], answer: "$x - 10y$", process: "\\begin{aligned} & 7(x - y) - 3(2x + y) \\\\ &= 7x - 7y - 6x - 3y \\\\ &= (7x - 6x) + (-7y - 3y) \\\\ &= x - 10y \\end{aligned}" },
+  { question: "-(4x - y) + 5(x + 2y)$", choices: ["$x + 9y$", "$x + 11y$", "$9x + 11y$", "$x - 9y$"], answer: "$x + 11y$", process: "\\begin{aligned} & -(4x - y) + 5(x + 2y) \\\\ &= -4x + y + 5x + 10y \\\\ &= (-4x + 5x) + (y + 10y) \\\\ &= x + 11y \\end{aligned}" },
+  { question: "$4(x + 2y) - 2(x - y)$", choices: ["$2x + 6y$", "$2x + 10y$", "$6x + 10y$", "$2x + 8y$"], answer: "$2x + 10y$", process: "\\begin{aligned} & 4(x + 2y) - 2(x - y) \\\\ &= 4x + 8y - 2x + 2y \\\\ &= (4x - 2x) + (8y + 2y) \\\\ &= 2x + 10y \\end{aligned}" },
+  { question: "$-3(3x - y) - (x + 4y)$", choices: ["$-10x + y$", "$-10x - y$", "$-8x - y$", "$-10x + 7y$"], answer: "$-10x - y$", process: "\\begin{aligned} & -3(3x - y) - (x + 4y) \\\\ &= -9x + 3y - x - 4y \\\\ &= (-9x - x) + (3y - 4y) \\\\ &= -10x - y \\end{aligned}" },
+  { question: "$8(x + y) + 3(x - 2y)$", choices: ["$11x + 5y$", "$11x + 2y$", "$5x + 2y$", "$11x - 14y$"], answer: "$11x + 2y$", process: "\\begin{aligned} & 8(x + y) + 3(x - 2y) \\\\ &= 8x + 8y + 3x - 6y \\\\ &= (8x + 3x) + (8y - 6y) \\\\ &= 11x + 2y \\end{aligned}" },
+  { question: "$2(5x + y) - 6(x - y)$", choices: ["$4x - 4y$", "$4x + 8y$", "$16x + 8y$", "$4x + 6y$"], answer: "$4x + 8y$", process: "\\begin{aligned} & 2(5x + y) - 6(x - y) \\\\ &= 10x + 2y - 6x + 6y \\\\ &= (10x - 6x) + (2y + 6y) \\\\ &= 4x + 8y \\end{aligned}" },
+  { question: "-(x + 6y) + 7(x - y)$", choices: ["$6x - 7y$", "$6x - 13y$", "$8x - 13y$", "$6x + y$"], answer: "$6x - 13y$", process: "\\begin{aligned} & -(x + 6y) + 7(x - y) \\\\ &= -x - 6y + 7x - 7y \\\\ &= (-x + 7x) + (-6y - 7y) \\\\ &= 6x - 13y \\end{aligned}" },
+  { question: "$5(x - 2y) - (2x - 3y)$", choices: ["$3x - 13y$", "$3x - 7y$", "$7x - 7y$", "$3x - 11y$"], answer: "$3x - 7y$", process: "\\begin{aligned} & 5(x - 2y) - (2x - 3y) \\\\ &= 5x - 10y - 2x + 3y \\\\ &= (5x - 2x) + (-10y + 3y) \\\\ &= 3x - 7y \\end{aligned}" },
+  { question: "$-6(x + y) + 3(x - 3y)$", choices: ["$-3x - 3y$", "$-3x - 15y$", "$-9x - 15y$", "$-3x + 3y$"], answer: "$-3x - 15y$", process: "\\begin{aligned} & -6(x + y) + 3(x - 3y) \\\\ &= -6x - 6y + 3x - 9y \\\\ &= (-6x + 3x) + (-6y - 9y) \\\\ &= -3x - 15y \\end{aligned}" },
+  { question: "$4(2x - y) - 5(x + y)$", choices: ["$3x - 5y$", "$3x - 9y$", "$13x - 9y$", "$3x - y$"], answer: "$3x - 9y$", process: "\\begin{aligned} & 4(2x - y) - 5(x + y) \\\\ &= 8x - 4y - 5x - 5y \\\\ &= (8x - 5x) + (-4y - 5y) \\\\ &= 3x - 9y \\end{aligned}" },
+  { question: "-(5x - y) - 2(x - 3y)$", choices: ["$-7x - 5y$", "$-7x + 7y$", "$3x + 7y$", "$-7x - 2y$"], answer: "$-7x + 7y$", process: "\\begin{aligned} & -(5x - y) - 2(x - 3y) \\\\ &= -5x + y - 2x + 6y \\\\ &= (-5x - 2x) + (y + 6y) \\\\ &= -7x + 7y \\end{aligned}" },
+  { question: "$10(x + y) + (3x - 7y)$", choices: ["$13x - 4y$", "$13x + 3y$", "$7x + 3y$", "$13x + 17y$"], answer: "$13x + 3y$", process: "\\begin{aligned} & 10(x + y) + (3x - 7y) \\\\ &= 10x + 10y + 3x - 7y \\\\ &= (10x + 3x) + (10y - 7y) \\\\ &= 13x + 3y \\end{aligned}" },
+  { question: "$3(x - 3y) - (4x - y)$", choices: ["$-x - 10y$", "$-x - 8y$", "$7x - 8y$", "$-x - 7y$"], answer: "$-x - 8y$", process: "\\begin{aligned} & 3(x - 3y) - (4x - y) \\\\ &= 3x - 9y - 4x + y \\\\ &= (3x - 4x) + (-9y + y) \\\\ &= -x - 8y \\end{aligned}" },
+  { question: "-7(x + y) + 5(x + 2y)", choices: ["$-2x + 17y$", "$-2x + 3y$", "$-12x + 3y$", "$-2x - 3y$"], answer: "$-2x + 3y$", process: "\\begin{aligned} & -7(x + y) + 5(x + 2y) \\\\ &= -7x - 7y + 5x + 10y \\\\ &= (-7x + 5x) + (-7y + 10y) \\\\ &= -2x + 3y \\end{aligned}" },
+  { question: "$9(x - y) - 6(x - 2y)$", choices: ["$3x - 21y$", "$3x + 3y$", "$15x + 3y$", "$3x - 3y$"], answer: "$3x + 3y$", process: "\\begin{aligned} & 9(x - y) - 6(x - 2y) \\\\ &= 9x - 9y - 6x + 12y \\\\ &= (9x - 6x) + (-9y + 12y) \\\\ &= 3x + 3y \\end{aligned}" },
+  { question: "-(3x - 2y) + 3(3x - y)$", choices: ["$6x + y$", "$6x - y$", "$12x - y$", "$6x - 5y$"], answer: "$6x - y$", process: "\\begin{aligned} & -(3x - 2y) + 3(3x - y) \\\\ &= -3x + 2y + 9x - 3y \\\\ &= (-3x + 9x) + (2y - 3y) \\\\ &= 6x - y \\end{aligned}" },
+  { question: "$4(x + 4y) - 6(x - y)$", choices: ["$-2x + 10y$", "$-2x + 22y$", "$10x + 22y$", "$-2x + 18y$"], answer: "$-2x + 22y$", process: "\\begin{aligned} & 4(x + 4y) - 6(x - y) \\\\ &= 4x + 16y - 6x + 6y \\\\ &= (4x - 6x) + (16y + 6y) \\\\ &= -2x + 22y \\end{aligned}" },
+  { question: "$8(2x - y) + (x + 9y)$", choices: ["$17x$", "$17x + y$", "$15x + y$", "$17x - 17y$"], answer: "$17x + y$", process: "\\begin{aligned} & 8(2x - y) + (x + 9y) \\\\ &= 16x - 8y + x + 9y \\\\ &= (16x + x) + (-8y + 9y) \\\\ &= 17x + y \\end{aligned}" },
+  { question: "-6(x - y) - (4x + y)$", choices: ["$-10x$", "$-10x + 5y$", "$-2x + 5y$", "$-10x - 7y$"], answer: "$-10x + 5y$", process: "\\begin{aligned} & -6(x - y) - (4x + y) \\\\ &= -6x + 6y - 4x - y \\\\ &= (-6x - 4x) + (6y - y) \\\\ &= -10x + 5y \\end{aligned}" },
+  { question: "$5(3x + y) - 13(x - y)$", choices: ["$2x - 8y$", "$2x + 18y$", "$28x + 18y$", "$2x + 13y$"], answer: "$2x + 18y$", process: "\\begin{aligned} & 5(3x + y) - 13(x - y) \\\\ &= 15x + 5y - 13x + 13y \\\\ &= (15x - 13x) + (5y + 13y) \\\\ &= 2x + 18y \\end{aligned}" },
+  { question: "-(7x - y) + 5(x + y)$", choices: ["$-2x + 4y$", "$-2x + 6y$", "$-12x + 6y$", "$-2x$"], answer: "$-2x + 6y$", process: "\\begin{aligned} & -(7x - y) + 5(x + y) \\\\ &= -7x + y + 5x + 5y \\\\ &= (-7x + 5x) + (y + 5y) \\\\ &= -2x + 6y \\end{aligned}" },
+  { question: "$11(x - y) - 8(x - y)$", choices: ["$3x + 3y$", "$3x - 3y$", "$19x - 19y$", "$3x - 19y$"], answer: "$3x - 3y$", process: "\\begin{aligned} & 11(x - y) - 8(x - y) \\\\ &= 11x - 11y - 8x + 8y \\\\ &= (11x - 8x) + (-11y + 8y) \\\\ &= 3x - 3y \\end{aligned}" },
+  // --- 【3番目が正解の問題】 (25問) ---
+  { question: "$6(x + y) + 2(x - y)$", choices: ["$8x + 8y$", "$8x + 2y$", "$8x + 4y$", "$4x + 4y$"], answer: "$8x + 4y$", process: "\\begin{aligned} & 6(x + y) + 2(x - y) \\\\ &= 6x + 6y + 2x - 2y \\\\ &= (6x + 2x) + (6y - 2y) \\\\ &= 8x + 4y \\end{aligned}" },
+  { question: "$8(2x - y) - (x + y)$", choices: ["$15x - 7y$", "$15x - 8y$", "$15x - 9y$", "$17x - 9y$"], answer: "$15x - 9y$", process: "\\begin{aligned} & 8(2x - y) - (x + y) \\\\ &= 16x - 8y - x - y \\\\ &= (16x - x) + (-8y - y) \\\\ &= 15x - 9y \\end{aligned}" },
+  { question: "$-4(x + y) + 7(x - y)$", choices: ["$3x - 3y$", "$3x - 10y$", "$3x - 11y$", "$11x - 11y$"], answer: "$3x - 11y$", process: "\\begin{aligned} & -4(x + y) + 7(x - y) \\\\ &= -4x - 4y + 7x - 7y \\\\ &= (-4x + 7x) + (-4y - 7y) \\\\ &= 3x - 11y \\end{aligned}" },
+  { question: "$9(x - y) - 5(2x + y)$", choices: ["$-x - 4y$", "$-x - 13y$", "$-x - 14y$", "$19x - 14y$"], answer: "$-x - 14y$", process: "\\begin{aligned} & 9(x - y) - 5(2x + y) \\\\ &= 9x - 9y - 10x - 5y \\\\ &= (9x - 10x) + (-9y - 5y) \\\\ &= -x - 14y \\end{aligned}" },
+  { question: "-(2x - y) + 6(x + 2y)$", choices: ["$4x + 11y$", "$4x + 12y$", "$4x + 13y$", "$8x + 13y$"], answer: "$4x + 13y$", process: "\\begin{aligned} & -(2x - y) + 6(x + 2y) \\\\ &= -2x + y + 6x + 12y \\\\ &= (-2x + 6x) + (y + 12y) \\\\ &= 4x + 13y \\end{aligned}" },
+  { question: "$3(x + 4y) - (x - y)$", choices: ["$2x + 11y$", "$2x + 12y$", "$2x + 13y$", "$4x + 13y$"], answer: "$2x + 13y$", process: "\\begin{aligned} & 3(x + 4y) - (x - y) \\\\ &= 3x + 12y - x + y \\\\ &= (3x - x) + (12y + y) \\\\ &= 2x + 13y \\end{aligned}" },
+  { question: "$-5(2x - y) - (x + 3y)$", choices: ["$-11x - y$", "$-11x + 3y$", "$-11x + 2y$", "$-9x + 2y$"], answer: "$-11x + 2y$", process: "\\begin{aligned} & -5(2x - y) - (x + 3y) \\\\ &= -10x + 5y - x - 3y \\\\ &= (-10x - x) + (5y - 3y) \\\\ &= -11x + 2y \\end{aligned}" },
+  { question: "$10(x + y) + 4(x - 3y)$", choices: ["$14x + 2y$", "$14x - y$", "$14x - 2y$", "$6x - 2y$"], answer: "$14x - 2y$", process: "\\begin{aligned} & 10(x + y) + 4(x - 3y) \\\\ &= 10x + 10y + 4x - 12y \\\\ &= (10x + 4x) + (10y - 12y) \\\\ &= 14x - 2y \\end{aligned}" },
+  { question: "$4(x + y) - 8(x - y)$", choices: ["$-4x$", "$-4x + 10y$", "$-4x + 12y$", "$12x + 12y$"], answer: "$-4x + 12y$", process: "\\begin{aligned} & 4(x + y) - 8(x - y) \\\\ &= 4x + 4y - 8x + 8y \\\\ &= (4x - 8x) + (4y + 8y) \\\\ &= -4x + 12y \\end{aligned}" },
+  { question: "-(x + 7y) + 8(x - y)$", choices: ["$7x - y$", "$9x - 15y$", "$7x - 15y$", "$7x + y$"], answer: "$7x - 15y$", process: "\\begin{aligned} & -(x + 7y) + 8(x - y) \\\\ &= -x - 7y + 8x - 8y \\\\ &= (-x + 8x) + (-7y - 8y) \\\\ &= 7x - 15y \\end{aligned}" },
+  { question: "$6(x - y) - (4x - 5y)$", choices: ["$2x - 11y$", "$2x - 2y$", "$2x - y$", "$10x - y$"], answer: "$2x - y$", process: "\\begin{aligned} & 6(x - y) - (4x - 5y) \\\\ &= 6x - 6y - 4x + 5y \\\\ &= (6x - 4x) + (-6y + 5y) \\\\ &= 2x - y \\end{aligned}" },
+  { question: "$-7(x + y) + 4(x - 2y)$", choices: ["$-3x - y$", "$-3x - 14y$", "$-3x - 15y$", "$-11x - 15y$"], answer: "$-3x - 15y$", process: "\\begin{aligned} & -7(x + y) + 4(x - 2y) \\\\ &= -7x - 7y + 4x - 8y \\\\ &= (-7x + 4x) + (-7y - 8y) \\\\ &= -3x - 15y \\end{aligned}" },
+  { question: "$5(2x - y) - 6(x + y)$", choices: ["$4x - 5y$", "$4x - 10y$", "$4x - 11y$", "$16x - 11y$"], answer: "$4x - 11y$", process: "\\begin{aligned} & 5(2x - y) - 6(x + y) \\\\ &= 10x - 5y - 6x - 6y \\\\ &= (10x - 6x) + (-5y - 6y) \\\\ &= 4x - 11y \\end{aligned}" },
+  { question: "-(6x - y) - 3(x - 2y)$", choices: ["$-9x - 5y$", "$-9x + 6y$", "$-9x + 7y$", "$3x + 7y$"], answer: "$-9x + 7y$", process: "\\begin{aligned} & -(6x - y) - 3(x - 2y) \\\\ &= -6x + y - 3x + 6y \\\\ &= (-6x - 3x) + (y + 6y) \\\\ &= -9x + 7y \\end{aligned}" },
+  { question: "$11(x + y) + (4x - 9y)$", choices: ["$15x - 2y$", "$15x + 20y$", "$15x + 2y$", "$7x + 2y$"], answer: "$15x + 2y$", process: "\\begin{aligned} & 11(x + y) + (4x - 9y) \\\\ &= 11x + 11y + 4x - 9y \\\\ &= (11x + 4x) + (11y - 9y) \\\\ &= 15x + 2y \\end{aligned}" },
+  { question: "$4(x - 5y) - (2x - y)$", choices: ["$2x - 21y$", "$2x - 18y$", "$2x - 19y$", "$6x - 19y$"], answer: "$2x - 19y$", process: "\\begin{aligned} & 4(x - 5y) - (2x - y) \\\\ &= 4x - 20y - 2x + y \\\\ &= (4x - 2x) + (-20y + y) \\\\ &= 2x - 19y \\end{aligned}" },
+  { question: "-8(x + y) + 6(x + 2y)", choices: ["$-2x + 20y$", "$-2x - 4y$", "$-2x + 4y$", "$-14x + 4y$"], answer: "$-2x + 4y$", process: "\\begin{aligned} & -8(x + y) + 6(x + 2y) \\\\ &= -8x - 8y + 6x + 12y \\\\ &= (-8x + 6x) + (-8y + 12y) \\\\ &= -2x + 4y \\end{aligned}" },
+  { question: "$7(x - 2y) - 5(x - 3y)$", choices: ["$2x - 29y$", "$2x + 2y$", "$2x + y$", "$12x + y$"], answer: "$2x + y$", process: "\\begin{aligned} & 7(x - 2y) - 5(x - 3y) \\\\ &= 7x - 14y - 5x + 15y \\\\ &= (7x - 5x) + (-14y + 15y) \\\\ &= 2x + y \\end{aligned}" },
+  { question: "-(2x - 3y) + 4(3x - y)$", choices: ["$10x + y$", "$14x - y$", "$10x - y$", "$10x - 7y$"], answer: "$10x - y$", process: "\\begin{aligned} & -(2x - 3y) + 4(3x - y) \\\\ &= -2x + 3y + 12x - 4y \\\\ &= (-2x + 12x) + (3y - 4y) \\\\ &= 10x - y \\end{aligned}" },
+  { question: "$5(x + 2y) - 7(x - y)$", choices: ["$-2x + 3y$", "$-2x + 16y$", "$-2x + 17y$", "$12x + 17y$"], answer: "$-2x + 17y$", process: "\\begin{aligned} & 5(x + 2y) - 7(x - y) \\\\ &= 5x + 10y - 7x + 7y \\\\ &= (5x - 7x) + (10y + 7y) \\\\ &= -2x + 17y \\end{aligned}" },
+  { question: "$9(2x - y) + (x + 5y)$", choices: ["$19x + 4y$", "$17x - 4y$", "$19x - 4y$", "$19x - 14y$"], answer: "$19x - 4y$", process: "\\begin{aligned} & 9(2x - y) + (x + 5y) \\\\ &= 18x - 9y + x + 5y \\\\ &= (18x + x) + (-9y + 5y) \\\\ &= 19x - 4y \\end{aligned}" },
+  { question: "-4(x - 3y) - (5x + y)$", choices: ["$-9x + 13y$", "$-9x + 10y$", "$-9x + 11y$", "$x + 11y$"], answer: "$-9x + 11y$", process: "\\begin{aligned} & -4(x - 3y) - (5x + y) \\\\ &= -4x + 12y - 5x - y \\\\ &= (-4x - 5x) + (12y - y) \\\\ &= -9x + 11y \\end{aligned}" },
+  { question: "$6(3x + y) - 15(x - y)$", choices: ["$3x + 9y$", "$3x + 20y$", "$3x + 21y$", "$33x + 21y$"], answer: "$3x + 21y$", process: "\\begin{aligned} & 6(3x + y) - 15(x - y) \\\\ &= 18x + 6y - 15x + 15y \\\\ &= (18x - 15x) + (6y + 15y) \\\\ &= 3x + 21y \\end{aligned}" },
+  { question: "-(8x - y) + 6(x + y)$", choices: ["$-2x + 5y$", "$-2x + 6y$", "$-2x + 7y$", "$-14x + 7y$"], answer: "$-2x + 7y$", process: "\\begin{aligned} & -(8x - y) + 6(x + y) \\\\ &= -8x + y + 6x + 6y \\\\ &= (-8x + 6x) + (y + 6y) \\\\ &= -2x + 7y \\end{aligned}" },
+  { question: "$10(x - y) - 5(x - y)$", choices: ["$5x + 5y$", "$5x - 15y$", "$5x - 5y$", "$15x - 15y$"], answer: "$5x - 5y$", process: "\\begin{aligned} & 10(x - y) - 5(x - y) \\\\ &= 10x - 10y - 5x + 5y \\\\ &= (10x - 5x) + (-10y + 5y) \\\\ &= 5x - 5y \\end{aligned}" },
+  // --- 【4番目が正解の問題】 (25問) ---
+  { question: "$7(x + y) + (x - y)$", choices: ["$8x + 8y$", "$6x$", "$8x + 5y$", "$8x + 6y$"], answer: "$8x + 6y$", process: "\\begin{aligned} & 7(x + y) + (x - y) \\\\ &= 7x + 7y + x - y \\\\ &= (7x + x) + (7y - y) \\\\ &= 8x + 6y \\end{aligned}" },
+  { question: "$9(2x - y) - (x + y)$", choices: ["$17x - 8y$", "$17x - 9y$", "$19x - 10y$", "$17x - 10y$"], answer: "$17x - 10y$", process: "\\begin{aligned} & 9(2x - y) - (x + y) \\\\ &= 18x - 9y - x - y \\\\ &= (18x - x) + (-9y - y) \\\\ &= 17x - 10y \\end{aligned}" },
+  { question: "$-5(x + y) + 8(x - y)$", choices: ["$3x - 3y$", "$3x - 12y$", "$13x - 13y$", "$3x - 13y$"], answer: "$3x - 13y$", process: "\\begin{aligned} & -5(x + y) + 8(x - y) \\\\ &= -5x - 5y + 8x - 8y \\\\ &= (-5x + 8x) + (-5y - 8y) \\\\ &= 3x - 13y \\end{aligned}" },
+  { question: "$10(x - y) - 4(2x + y)$", choices: ["$2x - 6y$", "$6x - 14y$", "$18x - 14y$", "$2x - 14y$"], answer: "$2x - 14y$", process: "\\begin{aligned} & 10(x - y) - 4(2x + y) \\\\ &= 10x - 10y - 8x - 4y \\\\ &= (10x - 8x) + (-10y - 4y) \\\\ &= 2x - 14y \\end{aligned}" },
+  { question: "-(x - 2y) + 7(x + y)$", choices: ["$6x + 5y$", "$8x + 9y$", "$6x - 5y$", "$6x + 9y$"], answer: "$6x + 9y$", process: "\\begin{aligned} & -(x - 2y) + 7(x + y) \\\\ &= -x + 2y + 7x + 7y \\\\ &= (-x + 7x) + (2y + 7y) \\\\ &= 6x + 9y \\end{aligned}" },
+  { question: "$2(x + 5y) - (x - y)$", choices: ["$x + 9y$", "$x + 10y$", "$3x + 11y$", "$x + 11y$"], answer: "$x + 11y$", process: "\\begin{aligned} & 2(x + 5y) - (x - y) \\\\ &= 2x + 10y - x + y \\\\ &= (2x - x) + (10y + y) \\\\ &= x + 11y \\end{aligned}" },
+  { question: "$-6(2x - y) - (x + 2y)$", choices: ["$-13x + 8y$", "$-13x + 3y$", "$-11x + 4y$", "$-13x + 4y$"], answer: "$-13x + 4y$", process: "\\begin{aligned} & -6(2x - y) - (x + 2y) \\\\ &= -12x + 6y - x - 2y \\\\ &= (-12x - x) + (6y - 2y) \\\\ &= -13x + 4y \\end{aligned}" },
+  { question: "$11(x + y) + 5(x - y)$", choices: ["$16x + 16y$", "$16x + 5y$", "$6x + 6y$", "$16x + 6y$"], answer: "$16x + 6y$", process: "\\begin{aligned} & 11(x + y) + 5(x - y) \\\\ &= 11x + 11y + 5x - 5y \\\\ &= (11x + 5x) + (11y - 5y) \\\\ &= 16x + 6y \\end{aligned}" },
+  { question: "$5(x + y) - 9(x - y)$", choices: ["$-4x$", "$-4x + 4y$", "$14x + 14y$", "$-4x + 14y$"], answer: "$-4x + 14y$", process: "\\begin{aligned} & 5(x + y) - 9(x - y) \\\\ &= 5x + 5y - 9x + 9y \\\\ &= (5x - 9x) + (5y + 9y) \\\\ &= -4x + 14y \\end{aligned}" },
+  { question: "-(x + 8y) + 9(x - y)$", choices: ["$8x - y$", "$10x - 17y$", "$8x - 16y$", "$8x - 17y$"], answer: "$8x - 17y$", process: "\\begin{aligned} & -(x + 8y) + 9(x - y) \\\\ &= -x - 8y + 9x - 9y \\\\ &= (-x + 9x) + (-8y - 9y) \\\\ &= 8x - 17y \\end{aligned}" },
+  { question: "$7(x - y) - (5x - 6y)$", choices: ["$2x - 13y$", "$2x - 2y$", "$12x - y$", "$2x - y$"], answer: "$2x - y$", process: "\\begin{aligned} & 7(x - y) - (5x - 6y) \\\\ &= 7x - 7y - 5x + 6y \\\\ &= (7x - 5x) + (-7y + 6y) \\\\ &= 2x - y \\end{aligned}" },
+  { question: "$-8(x + y) + 5(x - y)$", choices: ["$-3x - 3y$", "$-3x - 12y$", "$-13x - 13y$", "$-3x - 13y$"], answer: "$-3x - 13y$", process: "\\begin{aligned} & -8(x + y) + 5(x - y) \\\\ &= -8x - 8y + 5x - 5y \\\\ &= (-8x + 5x) + (-8y - 5y) \\\\ &= -3x - 13y \\end{aligned}" },
+  { question: "$6(2x - y) - 7(x + y)$", choices: ["$5x - 7y$", "$5x - 12y$", "$19x - 13y$", "$5x - 13y$"], answer: "$5x - 13y$", process: "\\begin{aligned} & 6(2x - y) - 7(x + y) \\\\ &= 12x - 6y - 7x - 7y \\\\ &= (12x - 7x) + (-6y - 7y) \\\\ &= 5x - 13y \\end{aligned}" },
+  { question: "-(7x - y) - 4(x - y)$", choices: ["$-11x - 3y$", "$-11x + 4y$", "$3x + 5y$", "$-11x + 5y$"], answer: "$-11x + 5y$", process: "\\begin{aligned} & -(7x - y) - 4(x - y) \\\\ &= -7x + y - 4x + 4y \\\\ &= (-7x - 4x) + (y + 4y) \\\\ &= -11x + 5y \\end{aligned}" },
+  { question: "$12(x + y) + (5x - 10y)$", choices: ["$17x - 2y$", "$17x + 22y$", "$7x + 2y$", "$17x + 2y$"], answer: "$17x + 2y$", process: "\\begin{aligned} & 12(x + y) + (5x - 10y) \\\\ &= 12x + 12y + 5x - 10y \\\\ &= (12x + 5x) + (12y - 10y) \\\\ &= 17x + 2y \\end{aligned}" },
+  { question: "$5(x - 4y) - (x - y)$", choices: ["$4x - 21y$", "$4x - 18y$", "$6x - 19y$", "$4x - 19y$"], answer: "$4x - 19y$", process: "\\begin{aligned} & 5(x - 4y) - (x - y) \\\\ &= 5x - 20y - x + y \\\\ &= (5x - x) + (-20y + y) \\\\ &= 4x - 19y \\end{aligned}" },
+  { question: "-9(x + y) + 7(x + 2y)", choices: ["$-2x + 23y$", "$-2x - 5y$", "$-16x + 5y$", "$-2x + 5y$"], answer: "$-2x + 5y$", process: "\\begin{aligned} & -9(x + y) + 7(x + 2y) \\\\ &= -9x - 9y + 7x + 14y \\\\ &= (-9x + 7x) + (-9y + 14y) \\\\ &= -2x + 5y \\end{aligned}" },
+  { question: "$8(x - 2y) - 6(x - 3y)$", choices: ["$2x - 34y$", "$2x - 2y$", "$14x + 2y$", "$2x + 2y$"], answer: "$2x + 2y$", process: "\\begin{aligned} & 8(x - 2y) - 6(x - 3y) \\\\ &= 8x - 16y - 6x + 18y \\\\ &= (8x - 6x) + (-16y + 18y) \\\\ &= 2x + 2y \\end{aligned}" },
+  { question: "-(x - 4y) + 5(3x - y)$", choices: ["$14x + 9y$", "$16x - y$", "$14x - 9y$", "$14x - y$"], answer: "$14x - y$", process: "\\begin{aligned} & -(x - 4y) + 5(3x - y) \\\\ &= -x + 4y + 15x - 5y \\\\ &= (-x + 15x) + (4y - 5y) \\\\ &= 14x - y \\end{aligned}" },
+  { question: "$6(x + y) - 8(x - y)$", choices: ["$-2x - 2y$", "$2x + 14y$", "$14x + 14y$", "$-2x + 14y$"], answer: "$-2x + 14y$", process: "\\begin{aligned} & 6(x + y) - 8(x - y) \\\\ &= 6x + 6y - 8x + 8y \\\\ &= (6x - 8x) + (6y + 8y) \\\\ &= -2x + 14y \\end{aligned}" },
+  { question: "$10(2x - y) + (x + 3y)$", choices: ["$21x + 7y$", "$19x - 7y$", "$21x - 13y$", "$21x - 7y$"], answer: "$21x - 7y$", process: "\\begin{aligned} & 10(2x - y) + (x + 3y) \\\\ &= 20x - 10y + x + 3y \\\\ &= (20x + x) + (-10y + 3y) \\\\ &= 21x - 7y \\end{aligned}" },
+  { question: "-3(x - 5y) - (2x + y)$", choices: ["$-5x + 16y$", "$-5x + 13y$", "$-x + 14y$", "$-5x + 14y$"], answer: "$-5x + 14y$", process: "\\begin{aligned} & -3(x - 5y) - (2x + y) \\\\ &= -3x + 15y - 2x - y \\\\ &= (-3x - 2x) + (15y - y) \\\\ &= -5x + 14y \\end{aligned}" },
+  { question: "$7(3x + y) - 20(x - y)$", choices: ["$x - 13y$", "$x + 20y$", "$41x + 27y$", "$x + 27y$"], answer: "$x + 27y$", process: "\\begin{aligned} & 7(3x + y) - 20(x - y) \\\\ &= 21x + 7y - 20x + 20y \\\\ &= (21x - 20x) + (7y + 20y) \\\\ &= x + 27y \\end{aligned}" },
+  { question: "-(6x - y) + 4(x + y)$", choices: ["$-2x + 3y$", "$-2x + 6y$", "$-10x + 5y$", "$-2x + 5y$"], answer: "$-2x + 5y$", process: "\\begin{aligned} & -(6x - y) + 4(x + y) \\\\ &= -6x + y + 4x + 4y \\\\ &= (-6x + 4x) + (y + 4y) \\\\ &= -2x + 5y \\end{aligned}" },
+  { question: "$9(x - y) - 4(x - y)$", choices: ["$5x + 5y$", "$5x - 13y$", "$13x - 13y$", "$5x - 5y$"], answer: "$5x - 5y$", process: "\\begin{aligned} & 9(x - y) - 4(x - y) \\\\ &= 9x - 9y - 4x + 4y \\\\ &= (9x - 4x) + (-9y + 4y) \\\\ &= 5x - 5y \\end{aligned}" }
+];
+      // ===== グローバル変数定義 =====
+        const modeSelectionScreen = document.getElementById('mode-selection');
+        const quizMainScreen = document.getElementById('quiz-main');
+        const musouBackground = document.getElementById('musou-background');
+
+        const questionArea = document.getElementById('question-area');
+        const nextButton = document.getElementById('next-btn');
+        const resultsArea = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
+        const timerBar = document.getElementById('timer-bar');
+        const timerText = document.getElementById('timer-text');
+        
+        let selectedQuizData;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        let timerInterval;
+        let timeLeft;
+        let TIME_LIMIT;
+        let WARNING_TIME;
+        
+        let totalSolveTime = 0;
+        let questionStartTime;
+
+        // ===== モード選択とクイズ開始の処理 =====
+        document.getElementById('normal-mode-btn').addEventListener('click', () => {
+            startGame({
+                timeLimit: 15,
+                warningTime: 5,
+                isMusou: false
+            });
+        });
+
+        document.getElementById('musou-mode-btn').addEventListener('click', () => {
+            startGame({
+                timeLimit: 5,
+                warningTime: 3,
+                isMusou: true
+            });
+        });
+
+        function startGame(settings) {
+            TIME_LIMIT = settings.timeLimit;
+            WARNING_TIME = settings.warningTime;
+
+            if (settings.isMusou) {
+                musouBackground.classList.remove('hidden');
+            }
+
+            // 問題をシャッフルして10問選ぶ
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            const shuffledData = shuffleArray(fullQuizDataBank);
+            selectedQuizData = shuffledData.slice(0, 10);
+
+            // 画面切り替え
+            modeSelectionScreen.classList.add('hidden');
+            quizMainScreen.classList.remove('hidden');
+
+            // クイズ開始
+            showQuestion();
+        }
+
+
+        // ===== タイマー関数 =====
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('warning');
+            document.body.classList.remove('timer-warning');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+
+                if (timeLeft <= WARNING_TIME) {
+                    timerBar.classList.add('warning');
+                    document.body.classList.add('timer-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+       function timeUp() {
+            stopTimer();
+            totalSolveTime += TIME_LIMIT;
+
+            const choicesContainer = questionArea.querySelector('.choices');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // ★ $ 除去
+
+            if(choicesContainer) {
+                choicesContainer.classList.add('answered');
+            }
+
+            feedbackMessage.textContent = "時間切れ💦";
+            feedbackMessage.classList.add('incorrect-feedback');
+            feedbackMessage.classList.remove('hidden');
+
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            processDisplay.classList.remove('hidden');
+
+            Array.from(choicesContainer.children).forEach(child => {
+                // ★★★ child.textContent から $ を除去して比較 ★★★
+                const choiceText = child.textContent.replace(/\$/g, ''); 
+                if (choiceText === correctAnswer) {
+                     child.classList.add('correct');
+                }
+            });
+
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+// ===== クイズ本体の関数 =====
+        function showQuestion() {
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            
+            const choicesHtml = currentQuestion.choices.map(choice => {
+                const onclickChoice = choice.replace(/\$/g, ''); 
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+            }).join('');
+
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+            
+            const problemTextElement = document.getElementById('problem-text');
+            katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
+
+            // ★★★ 各選択肢のテキストから $ を除去してKaTeXでレンダリング ★★★
+            const choiceElements = questionArea.querySelectorAll('.choice');
+            choiceElements.forEach(element => {
+                // textContent から $ を除去 (例: "$5x - y$" -> "5x - y")
+                const katexString = element.textContent.slice(1, -1); 
+                try {
+                    // $ を除去した文字列をレンダリング
+                    katex.render(katexString, element, { 
+                        throwOnError: true, 
+                        displayMode: false 
+                    }); 
+                } catch (e) {
+                    console.error("KaTeX render error on choice:", element.textContent, e); 
+                    // エラー時も元のテキスト（$付き）が表示されるようにする
+                    element.innerHTML = element.textContent; 
+                }
+            });
+            
+            questionStartTime = Date.now();
+            startTimer();
+        }
+        
+        function selectAnswer(element, selectedChoice) {
+            stopTimer();
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            totalSolveTime += timeTaken;
+
+            const choicesContainer = element.parentElement;
+            if (choicesContainer.classList.contains('answered')) return;
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) { 
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                 // 正解の選択肢をハイライト
+                Array.from(choicesContainer.children).forEach(child => {
+                    // ★★★ child.textContent から $ を除去して比較 ★★★
+                    const choiceText = child.textContent.replace(/\$/g, ''); 
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning');
+            if (currentQuestionIndex < selectedQuizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden');
+            
+            const finalScore = score * 10;
+            const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime);
+
+            let rank = '';
+            let rankColor = '';
+
+            if (totalSeconds <= 30) {
+                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
+            } else if (totalSeconds <= 45) {
+                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
+            } else if (totalSeconds <= 60) {
+                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+            } else {
+                rank = '💪 Cランク 💪'; rankColor = '#28a745';
+            }
+
+            resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank;
+            rankInfoDisplay.style.color = rankColor;
+        }
+    </script>
+
+</body>
+</html>
