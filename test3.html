@@ -412,7 +412,7 @@ const fullQuizDataBank = [
             clearInterval(timerInterval);
         }
 
-        function timeUp() {
+       function timeUp() {
             stopTimer();
             totalSolveTime += TIME_LIMIT;
 
@@ -420,7 +420,7 @@ const fullQuizDataBank = [
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer;
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // ★ $ 除去
 
             if(choicesContainer) {
                 choicesContainer.classList.add('answered');
@@ -434,8 +434,10 @@ const fullQuizDataBank = [
             processDisplay.classList.remove('hidden');
 
             Array.from(choicesContainer.children).forEach(child => {
-                if (child.innerText === correctAnswer) {
-                    child.classList.add('correct');
+                // ★★★ child.textContent から $ を除去して比較 ★★★
+                const choiceText = child.textContent.replace(/\$/g, ''); 
+                if (choiceText === correctAnswer) {
+                     child.classList.add('correct');
                 }
             });
 
@@ -449,17 +451,13 @@ const fullQuizDataBank = [
 
 // ===== クイズ本体の関数 =====
         function showQuestion() {
-            // 現在の問題データを取得
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-
-            // 選択肢のHTMLを生成
+            
             const choicesHtml = currentQuestion.choices.map(choice => {
-                // onclick属性用に $ を除去
                 const onclickChoice = choice.replace(/\$/g, ''); 
                 return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
             }).join('');
 
-            // 問題エリアにHTMLを挿入
             questionArea.innerHTML = `
                 <div class="question-block">
                     <div class="problem-text" id="problem-text"></div>
@@ -470,26 +468,28 @@ const fullQuizDataBank = [
                     </div>
                 </div>
             `;
-
-            // 問題文をKaTeXでレンダリング
+            
             const problemTextElement = document.getElementById('problem-text');
             katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
 
-            // ★★★ 各選択肢のテキストをKaTeXでレンダリング (innerHTML の後！) ★★★
+            // ★★★ 各選択肢のテキストから $ を除去してKaTeXでレンダリング ★★★
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                console.log("Rendering choice:", element.textContent); // ← デバッグ用ログ追加
+                // textContent から $ を除去 (例: "$5x - y$" -> "5x - y")
+                const katexString = element.textContent.slice(1, -1); 
                 try {
-                    katex.render(element.textContent, element, { 
-                        throwOnError: true, // エラーを強制的に表示させる
+                    // $ を除去した文字列をレンダリング
+                    katex.render(katexString, element, { 
+                        throwOnError: true, 
                         displayMode: false 
                     }); 
                 } catch (e) {
-                    console.error("KaTeX render error on choice:", element.textContent, e); // ← エラーを捕捉
+                    console.error("KaTeX render error on choice:", element.textContent, e); 
+                    // エラー時も元のテキスト（$付き）が表示されるようにする
+                    element.innerHTML = element.textContent; 
                 }
             });
-
-            // タイマー開始と開始時刻記録
+            
             questionStartTime = Date.now();
             startTimer();
         }
@@ -504,11 +504,12 @@ const fullQuizDataBank = [
             choicesContainer.classList.add('answered');
 
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer;
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
 
-            if (selectedChoice === correctAnswer) {
+            if (selectedChoice === correctAnswer) { 
                 score++;
                 element.classList.add('correct');
                 feedbackMessage.textContent = "正解💐";
@@ -521,8 +522,13 @@ const fullQuizDataBank = [
                 katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
                 processDisplay.classList.remove('hidden');
 
+                 // 正解の選択肢をハイライト
                 Array.from(choicesContainer.children).forEach(child => {
-                    if (child.innerText === correctAnswer) child.classList.add('correct');
+                    // ★★★ child.textContent から $ を除去して比較 ★★★
+                    const choiceText = child.textContent.replace(/\$/g, ''); 
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
                 });
             }
             
