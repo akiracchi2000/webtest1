@@ -469,31 +469,41 @@ const fullQuizDataBank = [
                 </div>
             `;
             
+            // ★★★ 問題文のテキストから $ を除去してKaTeXでレンダリング ★★★
             const problemTextElement = document.getElementById('problem-text');
-            katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
+            // question 文字列から $ を除去 (例: "$2(x+y)+...$" -> "2(x+y)+...")
+            const questionKatexString = currentQuestion.question.slice(1, -1); 
+            try {
+                // $ を除去した文字列をレンダリング
+                katex.render(questionKatexString, problemTextElement, { 
+                    throwOnError: true, // エラーを強制的に表示
+                    displayMode: true // 問題文は独立した行で表示
+                });
+            } catch (e) {
+                 console.error("KaTeX render error on question:", currentQuestion.question, e);
+                 // エラー時は元のテキスト（$付き）を表示
+                 problemTextElement.textContent = currentQuestion.question;
+            }
 
-            // ★★★ 各選択肢のテキストから $ を除去してKaTeXでレンダリング ★★★
+
+            // 各選択肢のテキストから $ を除去してKaTeXでレンダリング
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                // textContent から $ を除去 (例: "$5x - y$" -> "5x - y")
                 const katexString = element.textContent.slice(1, -1); 
                 try {
-                    // $ を除去した文字列をレンダリング
                     katex.render(katexString, element, { 
                         throwOnError: true, 
                         displayMode: false 
                     }); 
                 } catch (e) {
                     console.error("KaTeX render error on choice:", element.textContent, e); 
-                    // エラー時も元のテキスト（$付き）が表示されるようにする
                     element.innerHTML = element.textContent; 
                 }
             });
             
             questionStartTime = Date.now();
             startTimer();
-        }
-        
+        }        
         function selectAnswer(element, selectedChoice) {
             stopTimer();
             const timeTaken = (Date.now() - questionStartTime) / 1000;
