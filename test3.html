@@ -447,7 +447,7 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
-        // ===== クイズ本体の関数 =====
+// ===== クイズ本体の関数 =====
         function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
             
@@ -484,7 +484,7 @@ const fullQuizDataBank = [
             questionStartTime = Date.now();
             startTimer();
         }
-
+        
         function selectAnswer(element, selectedChoice) {
             stopTimer();
             const timeTaken = (Date.now() - questionStartTime) / 1000;
