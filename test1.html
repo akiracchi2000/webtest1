@@ -145,6 +145,21 @@
         #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
         #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
         .hidden { display: none; }
+        /* ===== トップへ戻るボタンのスタイル ===== */
+        .home-btn {
+            display: inline-block; /* ボタンのように振る舞わせる */
+            margin-top: 1.5em;
+            padding: 10px 25px;
+            font-size: 1em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #6c757d; /* 落ち着いたグレー */
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .home-btn:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -176,6 +191,7 @@
             <p id="time-info"></p>
             <p id="rank-info"></p>
             <p class="sub-message">お疲れ様でした！</p>
+            <a href="./index.html" class="home-btn">トップページに戻る</a>
         </div>
         
         <div class="controls">
@@ -545,6 +561,7 @@ const fullQuizDataBank = [
 
 </body>
 </html>
+
 
 
 
