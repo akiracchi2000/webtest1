@@ -451,7 +451,7 @@ const fullQuizDataBank = [
         function showQuestion() {
             // 現在の問題データを取得
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            
+
             // 選択肢のHTMLを生成
             const choicesHtml = currentQuestion.choices.map(choice => {
                 // onclick属性用に $ を除去
@@ -470,20 +470,25 @@ const fullQuizDataBank = [
                     </div>
                 </div>
             `;
-            
+
             // 問題文をKaTeXでレンダリング
             const problemTextElement = document.getElementById('problem-text');
             katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
 
-            // 各選択肢のテキストをKaTeXでレンダリング
+            // ★★★ 各選択肢のテキストをKaTeXでレンダリング (innerHTML の後！) ★★★
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                katex.render(element.textContent, element, { 
-                    throwOnError: false, 
-                    displayMode: false 
-                }); 
+                console.log("Rendering choice:", element.textContent); // ← デバッグ用ログ追加
+                try {
+                    katex.render(element.textContent, element, { 
+                        throwOnError: true, // エラーを強制的に表示させる
+                        displayMode: false 
+                    }); 
+                } catch (e) {
+                    console.error("KaTeX render error on choice:", element.textContent, e); // ← エラーを捕捉
+                }
             });
-            
+
             // タイマー開始と開始時刻記録
             questionStartTime = Date.now();
             startTimer();
