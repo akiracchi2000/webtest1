@@ -44,31 +44,45 @@
         }
 
         nav a {
-            display: block;
-            padding: 20px;
-            font-size: 1.2em;
-            text-decoration: none;
-            color: #fff;
-            background-color: #3498db;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-        }
+        display: block;
+        padding: 20px;
+        font-size: 1.2em;
+        text-decoration: none;
+        color: #fff;
+        /* background-color: #3498db; ← デフォルトの色指定は削除またはコメントアウト */
+        border-radius: 8px;
+        font-weight: bold;
+        transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    }
 
-        nav a:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            background-color: #2980b9;
-        }
-        
-        /* 2つ目以降のボタンの色を変える場合 */
-        nav a.formula-quiz {
-            background-color: #2ecc71;
-        }
-        nav a.formula-quiz:hover {
-            background-color: #27ae60;
-        }
+    /* ★ 難易度ごとの色指定を追加 ★ */
+    .level-beginner {
+        background-color: #3498db; /* 青 */
+    }
+    .level-beginner:hover {
+        background-color: #2980b9; /* 濃い青 */
+    }
 
+    .level-intermediate {
+        background-color: #8e44ad; /* 紫 */
+    }
+    .level-intermediate:hover {
+        background-color: #732d91; /* 濃い紫 */
+    }
+
+    .level-advanced {
+        background-color: #c0392b; /* 赤 */
+    }
+    .level-advanced:hover {
+        background-color: #a93226; /* 濃い赤 */
+    }
+
+    /* ... (既存の nav a:hover スタイル - transform と box-shadow だけ残すか、各レベルの:hoverに含める) ... */
+    nav a:hover {
+       transform: translateY(-3px);
+       box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+       /* background-color は各レベルで指定するので削除 */
+    }
     </style>
 </head>
 <body>
@@ -78,13 +92,13 @@
         <nav>
             <ul>
                 <li>
-                    <a href="./test1.html">正負の数計算タイムアタック（初級）</a>
+                    <a href="./test1.html" class="level-beginner">正負の数計算タイムアタック（初級）</a>
                 </li>
                 <li>
-                    <a href="./test2.html" class="formula-quiz">正負の数計算タイムアタック（上級）</a>
+                    <a href="./test2.html" class="level-intermediate">正負の数計算タイムアタック（上級）</a>
                 </li>
                 <li>
-                    <a href="./test3.html">1次式の文字式の整理タイムアタック（初級）</a>
+                    <a href="./test3.html" class="level-advanced">1次式の文字式の整理タイムアタック（初級）</a>
                 </li>
             </ul>
         </nav>
