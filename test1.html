@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算テスト (モード選択)</title>
+    <title>計算テスト (初級)</title>
     
     <link rel="stylesheet" href="./katex/katex.min.css">
     <script defer src="./katex/katex.min.js"></script>
@@ -208,12 +208,10 @@
     <script>
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
         // ★ 
-        // ★  ここに test1.html 用の100問のデータバンクを貼り付け
-        // ★ 
-        // ★ const fullQuizDataBank = [ ... (100問) ... ];
+        // ★  const fullQuizDataBank = [ ... ];
+        // ★  (↑ ここに100問のデータバンクを貼り付け)
         // ★ 
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
 // ===== 全100問の問題データバンク (3項計算・整数選択肢・左から計算トラップ付き・選択肢修正版) =====
 const fullQuizDataBank = [
     // --- 【1番目が正解の問題】 (25問) ---
@@ -321,6 +319,7 @@ const fullQuizDataBank = [
     { question: "4 \\times (-10) + 9", choices: ["-4", "4", "49", "-31"], answer: "-31", process: "\\begin{aligned} & 4 \\times (-10) + 9 \\\\ &= -40 + 9 \\\\ &= -31 \\end{aligned}" },
     { question: "42 \\div (-6) - 1", choices: ["-6", "6", "8", "-8"], answer: "-8", process: "\\begin{aligned} & 42 \\div (-6) - 1 \\\\ &= -7 - 1 \\\\ &= -8 \\end{aligned}" }
 ];
+
         // ===== グローバル変数定義 =====
         const modeSelectionScreen = document.getElementById('mode-selection');
         const quizMainScreen = document.getElementById('quiz-main');
@@ -352,8 +351,9 @@ const fullQuizDataBank = [
         document.getElementById('normal-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'normal',
-                timeLimit: 15,     // ★ 制限時間15秒
-                warningTime: 5,      // ★ 警告は残り5秒
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 15,     // ノーマル 制限時間15秒
+                warningTime: 5,      // ノーマル 警告は残り5秒
                 isMusou: false,
                 sRankTime: 30,  
                 aRankTime: 45,  
@@ -364,8 +364,9 @@ const fullQuizDataBank = [
         document.getElementById('musou-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'musou',
-                timeLimit: 5,      // ★ 制限時間5秒
-                warningTime: 3,      // ★ 警告は残り3秒
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 5,      // 無双 制限時間5秒
+                warningTime: 3,      // 無双 警告は残り3秒
                 isMusou: true,
                 sRankTime: 20,  
                 aRankTime: 30,  
@@ -374,11 +375,10 @@ const fullQuizDataBank = [
         });
 
         function startGame(settings) {
-            currentMode = settings.mode; // ★ モード名を保存
+            currentMode = settings.mode; 
             TIME_LIMIT = settings.timeLimit;
             WARNING_TIME = settings.warningTime;
             
-            // ランク判定基準をグローバル変数に保存
             currentRankSettings = {
                 sRankTime: settings.sRankTime,
                 aRankTime: settings.aRankTime,
@@ -389,7 +389,6 @@ const fullQuizDataBank = [
                 musouBackground.classList.remove('hidden');
             }
 
-            // 問題をシャッフルして10問選ぶ
             function shuffleArray(array) {
                 const newArray = [...array];
                 for (let i = newArray.length - 1; i > 0; i--) {
@@ -401,11 +400,9 @@ const fullQuizDataBank = [
             const shuffledData = shuffleArray(fullQuizDataBank);
             selectedQuizData = shuffledData.slice(0, 10);
 
-            // 画面切り替え
             modeSelectionScreen.classList.add('hidden');
             quizMainScreen.classList.remove('hidden');
 
-            // クイズ開始
             showQuestion();
         }
 
@@ -494,7 +491,6 @@ const fullQuizDataBank = [
                 </div>
             `;
             
-            // 問題文のテキストから $ を除去してKaTeXでレンダリング
             const problemTextElement = document.getElementById('problem-text');
             const questionKatexString = currentQuestion.question.slice(1, -1); 
             try {
@@ -507,10 +503,14 @@ const fullQuizDataBank = [
                  problemTextElement.textContent = currentQuestion.question;
             }
 
-            // 各選択肢のテキストから $ を除去してKaTeXでレンダリング
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                const katexString = element.textContent.slice(1, -1); 
+                // $ を含まない選択肢（整数の答えなど）の場合、エラーを避ける
+                let katexString = element.textContent;
+                if (katexString.startsWith('$') && katexString.endsWith('$')) {
+                     katexString = katexString.slice(1, -1); 
+                }
+
                 try {
                     katex.render(katexString, element, { 
                         throwOnError: true, 
@@ -533,4 +533,131 @@ const fullQuizDataBank = [
 
             const choicesContainer = element.parentElement;
             if (choicesContainer.classList.contains('answered')) return;
-            choicesContainer.classList.
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) { 
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                 // 正解の選択肢をハイライト
+                Array.from(choicesContainer.children).forEach(child => {
+                    const choiceText = child.textContent.replace(/\$/g, ''); 
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning');
+            if (currentQuestionIndex < selectedQuizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden');
+            
+            const finalScore = score * 10;
+            const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime);
+
+            let rank = '';
+            let rankColor = '';
+            let rankName = '';
+
+            if (totalSeconds <= currentRankSettings.sRankTime) {
+                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
+                rankName = 'S';
+            } else if (totalSeconds <= currentRankSettings.aRankTime) {
+                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
+                rankName = 'A';
+            } else if (totalSeconds <= currentRankSettings.bRankTime) {
+                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+                rankName = 'B';
+            } else {
+                rank = '💪 Cランク 💪'; rankColor = '#28a745';
+                rankName = 'C';
+            }
+            
+            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
+            
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
+            const thisTestId = "test1"; 
+            // ★ (例: test2.html なら "test2" にする) ★
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+            // ★ 5. 履歴キー（ファイルごとに変える） ★
+            const historyKey = 'calcHistory'; // ★「正負の数」用のキー
+            
+            if (finalScore === totalPoints && (rankName === 'S' || rankName === 'A')) {
+                let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+                const newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
+                const currentBest = achievements[thisTestId]; 
+
+                if (newLevel === 'musou' || currentBest !== 'musou') {
+                    achievements[thisTestId] = newLevel;
+                    localStorage.setItem('quizAchievements', JSON.stringify(achievements));
+                }
+            }
+            
+            // --- 履歴保存処理 ---
+             const newResult = {
+                score: finalScore,
+                totalPoints: totalPoints,
+                time: totalSeconds,
+                rank: rankName, 
+                date: new Date().toLocaleString('ja-JP') 
+            };
+            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+            history.unshift(newResult);
+            localStorage.setItem(historyKey, JSON.stringify(history)); 
+            // --- 保存処理ここまで ---
+
+            resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank; 
+            rankInfoDisplay.style.color = rankColor;
+        }
+        
+    </script>
+
+</body>
+</html>
