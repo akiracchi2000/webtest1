@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算テスト (初級)</title>
+    <title>計算テスト (テンプレートA)</title>
     
     <link rel="stylesheet" href="./katex/katex.min.css">
     <script defer src="./katex/katex.min.js"></script>
@@ -185,7 +185,7 @@
             <span class="timer-text" id="timer-text"></span>
         </div>
         
-        <h1>計算テスト (初級)</h1>
+        <h1>1次式の整理 (初級)</h1>
         <div id="question-area"></div>
         
         <div id="results" class="hidden">
@@ -203,7 +203,6 @@
     </div>
 
     <div id="musou-background" class="hidden"></div>
-
 
     <script>
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
@@ -320,16 +319,7 @@ const fullQuizDataBank = [
   { question: "$9(x - y) - 4(x - y)$", choices: ["$5x + 5y$", "$5x - 13y$", "$13x - 13y$", "$5x - 5y$"], answer: "$5x - 5y$", process: "\\begin{aligned} & 9(x - y) - 4(x - y) \\\\ &= 9x - 9y - 4x + 4y \\\\ &= (9x - 4x) + (-9y + 4y) \\\\ &= 5x - 5y \\end{aligned}" }
 ];
 
-        <script>
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        // ★ 
-        // ★  const fullQuizDataBank = [ ... ];
-        // ★  (↑ ここに test1.html 用の100問のデータバンクを貼り付け)
-        // ★ 
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
-
-        // ===== グローバル変数定義 =====
+       // ===== グローバル変数定義 =====
         const modeSelectionScreen = document.getElementById('mode-selection');
         const quizMainScreen = document.getElementById('quiz-main');
         const musouBackground = document.getElementById('musou-background');
@@ -360,24 +350,26 @@ const fullQuizDataBank = [
         document.getElementById('normal-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'normal',
-                timeLimit: 15,     // ノーマル 制限時間15秒
-                warningTime: 5,      // ノーマル 警告は残り5秒
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 15,     // ノーマル 制限時間 (例)
+                warningTime: 5,      // ノーマル 警告時間 (例)
                 isMusou: false,
-                sRankTime: 30,  
-                aRankTime: 45,  
-                bRankTime: 60   
+                sRankTime: 40,  // Sランク基準 (例: 40秒)
+                aRankTime: 60,  // Aランク基準 (例: 60秒)
+                bRankTime: 90   // Bランク基準 (例: 90秒)
             });
         });
 
         document.getElementById('musou-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'musou',
-                timeLimit: 5,      // 無双 制限時間5秒
-                warningTime: 3,      // 無双 警告は残り3秒
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 7,      // 無双 制限時間 (例)
+                warningTime: 3,      // 無双 警告時間 (例)
                 isMusou: true,
-                sRankTime: 20,  
-                aRankTime: 30,  
-                bRankTime: 40   
+                sRankTime: 30,  // Sランク基準 (例: 30秒)
+                aRankTime: 45,  // Aランク基準 (例: 45秒)
+                bRankTime: 60   // Bランク基準 (例: 60秒)
             });
         });
 
@@ -450,7 +442,7 @@ const fullQuizDataBank = [
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer; // ★ $ 除去処理は不要 ★
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
 
             if(choicesContainer) {
                 choicesContainer.classList.add('answered');
@@ -464,7 +456,7 @@ const fullQuizDataBank = [
             processDisplay.classList.remove('hidden');
 
             Array.from(choicesContainer.children).forEach(child => {
-                const choiceText = child.textContent; // ★ $ 除去処理は不要 ★
+                const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
                 if (choiceText === correctAnswer) {
                      child.classList.add('correct');
                 }
@@ -478,14 +470,13 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
-        // ===== クイズ本体の関数 (★修正版★) =====
+        // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
         function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
             
-            // ★ $ 除去処理は不要 ★
             const choicesHtml = currentQuestion.choices.map(choice => {
-                // const onclickChoice = choice.replace(/\$/g, ''); // 不要
-                return `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`;
+                const onclickChoice = choice.replace(/\$/g, ''); // $ 除去
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
             }).join('');
 
             questionArea.innerHTML = `
@@ -499,10 +490,11 @@ const fullQuizDataBank = [
                 </div>
             `;
             
-            // ★ 問題文の $ 除去処理は不要 ★
+            // ★ 問題文の $ 除去 ★
             const problemTextElement = document.getElementById('problem-text');
+            const questionKatexString = currentQuestion.question.slice(1, -1); // $ 除去
             try {
-                katex.render(currentQuestion.question, problemTextElement, { // .slice(1, -1) を削除
+                katex.render(questionKatexString, problemTextElement, { 
                     throwOnError: true,
                     displayMode: true
                 });
@@ -511,11 +503,10 @@ const fullQuizDataBank = [
                  problemTextElement.textContent = currentQuestion.question;
             }
 
-            // ★ 選択肢の $ 除去処理は不要 ★
+            // ★ 選択肢の $ 除去 ★
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                let katexString = element.textContent; // .slice(1, -1) を削除
-                
+                const katexString = element.textContent.slice(1, -1); // $ 除去
                 try {
                     katex.render(katexString, element, { 
                         throwOnError: true, 
@@ -541,7 +532,7 @@ const fullQuizDataBank = [
             choicesContainer.classList.add('answered');
 
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer; // ★ $ 除去処理は不要 ★
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
 
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
@@ -561,7 +552,7 @@ const fullQuizDataBank = [
 
                  // 正解の選択肢をハイライト
                 Array.from(choicesContainer.children).forEach(child => {
-                    const choiceText = child.textContent; // ★ $ 除去処理は不要 ★
+                    const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
                     if (choiceText === correctAnswer) {
                          child.classList.add('correct');
                     }
@@ -616,9 +607,15 @@ const fullQuizDataBank = [
                 rankName = 'C';
             }
             
-            // 達成状況（スター/クラウン）の保存処理
-            const thisTestId = "test4"; // ★ test1.html なので "test1" ★
-            const historyKey = 'calcHistory'; // ★「正負の数」用のキー
+            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
+            
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
+            const thisTestId = "test3"; // 例: test4 なら "test4", test5 なら "test5"
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+            // ★ 5. 履歴キー（ファイルごとに変える） ★
+            const historyKey = 'algebraHistory'; // ★「文字式」用のキー
             
             if (finalScore === totalPoints && (rankName === 'S' || rankName === 'A')) {
                 let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
