@@ -4,10 +4,10 @@
 Markdown
 
 # ITTO用 愛知県公立高校入試対策アプリ
-katex/ ・・・ KaTeXを組み込むための設定ファイルフォルダ  
-hannya.png ・・・ 無双モードの背景画像  
-index.html ・・・トップページ  
 framefile.html ・・・トップページ保管用ファイル（バックアップ用）  
+katex/ ・・・ KaTeXを組み込むための設定ファイルフォルダ  
+┣hannya.png ・・・ 無双モードの背景画像  
+┣index.html ・・・トップページ  
 test1.html ・・・ 正負の数の計算（初級）3整数  
 test2.html ・・・ 正負の数の計算（上級）4整数  
 test3.html ・・・ 1次式の整理（初級）1変数  
