@@ -3,270 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達成状況・プレイ履歴</title>
+    <title>達成状況一覧</title>
+    
     <style>
+        /* ページの基本スタイル */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 3em 0;
+            padding: 2em 0;
             background-color: #f4f7f6;
+            box-sizing: border-box;
         }
 
-        .container {
-            width: 90%;
+        /* コンテナ */
+        .main-container {
             max-width: 700px;
-            text-align: center;
-        }
-
-        .main-card {
+            width: 90%;
             background: #fff;
-            padding: 2em;
+            padding: 2em 3em;
             border-radius: 12px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-            margin-bottom: 2em;
+            text-align: center;
         }
 
         h1 {
             color: #2c3e50;
-            margin-top: 0;
-            margin-bottom: 1.5em;
+            text-align: center;
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
+            margin: 0 0 1.5em 0;
         }
         
-        h2 {
-            color: #34495e;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-            margin-top: 0;
+        h3 {
+             color: #2c3e50;
+             margin-bottom: 0.5em;
+             border-left: 5px solid #3498db;
+             padding-left: 10px;
+             text-align: left;
+        }
+        
+        p {
+            line-height: 1.6;
         }
 
-        /* ===== 達成状況のスタイル（変更・追加） ===== */
-        .category-title {
-            color: #34495e;
-            text-align: left;
-            border-bottom: 2px solid #3498db; /* 区切りを明確に */
-            padding-bottom: 8px;
-            margin-top: 1.5em;
-            margin-bottom: 1em;
-        }
-        .main-card h2:first-of-type {
-             margin-top: 0; /* 最初の見出しは上の余白を消す */
-        }
-        
-        .achievements-list {
-            list-style-type: none;
+        /* 達成状況リスト */
+        #achievement-list {
+            list-style: none;
             padding: 0;
-            text-align: left;
-            margin: 0 0 2em 0; /* 各リストの下に余白 */
-        }
-        .achievements-list li {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.1em;
-            font-weight: bold;
-        }
-        .achievement-icon {
-            font-size: 1.5em;
-            margin-left: 10px;
-            vertical-align: middle;
-            text-shadow: 0 0 3px rgba(0,0,0,0.3);
-        }
-
-        /* ===== 履歴表示エリアのスタイル ===== */
-        .history-section {
-            background: #fff;
-            padding: 2em;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
             margin-bottom: 2em;
         }
-        .history-section ul {
-            list-style-type: none;
-            padding: 0;
-            text-align: left;
-            max-height: 300px; 
-            overflow-y: auto;
-        }
-        .history-section li {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 5px solid #6c757d;
-        }
-        .history-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-        .history-item-details {
-            font-size: 0.9em;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-        .clear-history-btn {
-            margin-top: 1em;
-            padding: 8px 16px;
-            font-size: 0.9em;
-            color: #fff;
-            background-color: #dc3545;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .hidden { display: none; }
         
-        /* トップへ戻るボタン */
-        .home-btn {
+        .achievement-item {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.2em;
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .achievement-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        
+        .test-id {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #495057;
+            margin-bottom: 0.5em;
+        }
+        
+        .status-icon {
+            font-size: 2.5em;
+        }
+        .status-icon.musou {
+            color: #c0392b; /* 無双モード (王冠) */
+        }
+        .status-icon.normal {
+            color: #f1c40f; /* ノーマル (スター) */
+        }
+        .status-icon.none {
+            color: #ced4da; /* 未達成 */
+        }
+        
+        /* コントロールエリア */
+        .controls {
+            text-align: center;
+            max-width: 600px;
+            margin: 1em auto;
+            border-top: 1px solid #ddd; 
+            padding-top: 1.5em;
+        }
+        
+        .controls p {
+             font-size: 0.9em; 
+             color: #6c757d;
+        }
+
+        /* ボタン共通スタイル */
+        .home-btn, .reset-btn {
             display: inline-block;
-            margin-top: 2em;
-            padding: 10px 25px;
-            font-size: 1em;
+            margin-top: 1em;
+            padding: 12px 30px;
+            font-size: 1.1em;
             text-decoration: none;
             color: #fff;
-            background-color: #6c757d;
             border-radius: 5px;
-            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        
+        .home-btn {
+            background-color: #6c757d;
         }
         .home-btn:hover {
             background-color: #5a6268;
         }
 
+        .reset-btn {
+            background-color: #dc3545; /* 赤色 */
+        }
+        .reset-btn:hover {
+            background-color: #c82333; /* 濃い赤色 */
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="main-card">
-            <h1>達成状況</h1>
-            
-            <h2 class="category-title">正負の数</h2>
-            <ul id="achievements-list-calc" class="achievements-list">
-                </ul>
-            
-            <h2 class="category-title">文字式</h2>
-            <ul id="achievements-list-algebra" class="achievements-list">
-                </ul>
-            
-            <h2 class="category-title">平方根</h2>
-            <ul id="achievements-list-root" class="achievements-list">
-                </ul>
-        </div>
-        <div class="history-section">
-            <h2>プレイ履歴 (正負の数)</h2>
-            <ul id="history-list-calc"></ul>
-            <button id="clear-history-calc" class="clear-history-btn hidden">履歴を削除</button>
+    <div class="main-container">
+        <h1>達成状況</h1>
+        
+        <h3>🏆 獲得トロフィー 🏆</h3>
+        
+        <ul id="achievement-list">
+            </ul>
+        
+        <div class="controls">
+            <h3>⚠️ データ管理</h3>
+            <p>スター(⭐)やクラウン(👑)の達成状況を<br>すべてリセットします。</p>
+            <button id="reset-achievements-btn" class="reset-btn">全達成状況をリセット</button>
         </div>
         
-        <div class="history-section">
-            <h2>プレイ履歴 (文字式)</h2>
-            <ul id="history-list-algebra"></ul>
-            <button id="clear-history-algebra" class="clear-history-btn hidden">履歴を削除</button>
-        </div>
-        
-        <div class="history-section">
-            <h2>プレイ履歴 (平方根)</h2>
-            <ul id="history-list-root"></ul>
-            <button id="clear-history-root" class="clear-history-btn hidden">履歴を削除</button>
-        </div>
-
         <a href="./index.html" class="home-btn">トップページに戻る</a>
     </div>
 
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             
-            // ★★★★★★★ 達成状況の表示ロジック (分野別) ★★★★★★★
-            const achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+            // --- 達成状況の表示 ---
             
-            // 各テストの表示名、ID、表示先のリストIDを定義
-            const testDetails = [
-                // 正負の数
-                { id: 'test1', name: '正負の数計算（初級）', listId: 'achievements-list-calc' },
-                { id: 'test2', name: '正負の数計算（上級）', listId: 'achievements-list-calc' },
-                // 文字式
-                { id: 'test3', name: '1次式の整理（初級）', listId: 'achievements-list-algebra' },
-                { id: 'test4', name: '1次式の整理（中級）', listId: 'achievements-list-algebra' },
-                { id: 'test5', name: '1次式の整理（上級）', listId: 'achievements-list-algebra' },
-                // 平方根
-                { id: 'test6', name: '平方根の計算（初級）', listId: 'achievements-list-root' },
-                { id: 'test7', name: '平方根の計算（中級）', listId: 'achievements-list-root' },
-                { id: 'test8', name: '平方根の計算（上級）', listId: 'achievements-list-root' },
+            // ★ ここに対象となるテストIDのリストを追加・編集してください
+            const testIds = [
+                "test1", "test2", "test3", 
+                "test4", "test5", "test6",
+                "test7", "test8", "test9"
+                // 今後 test10, test11... と追加
             ];
+            
+            const achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+            const listElement = document.getElementById('achievement-list');
+            
+            if (testIds.length === 0) {
+                 listElement.innerHTML = "<p>対象のテストがありません。</p>";
+                 return;
+            }
 
-            testDetails.forEach(test => {
-                const targetList = document.getElementById(test.listId);
-                if (!targetList) return; // 対象リストがHTMLになければスキップ
-
-                const li = document.createElement('li');
-                li.textContent = test.name;
+            testIds.forEach(id => {
+                const status = achievements[id]; // "musou", "normal", または undefined
+                let icon = '➖';
+                let iconClass = 'none';
                 
-                const achievementLevel = achievements[test.id]; // 'musou', 'normal', or undefined
-
-                if (achievementLevel) {
-                    let icon = '⭐';
-                    if (achievementLevel === 'musou') {
-                        icon = '👑';
-                    }
-                    li.innerHTML += `<span class="achievement-icon">${icon}</span>`;
-                } else {
-                    li.innerHTML += `<span class="achievement-icon" style="color: #ccc;">―</span>`; // 未達成はグレー
+                if (status === 'musou') {
+                    icon = '👑'; // 無双モード (王冠)
+                    iconClass = 'musou';
+                } else if (status === 'normal') {
+                    icon = '⭐'; // ノーマル (スター)
+                    iconClass = 'normal';
                 }
-                targetList.appendChild(li);
+                
+                const item = document.createElement('li');
+                item.className = 'achievement-item';
+                item.innerHTML = `
+                    <div class="test-id">${id}</div>
+                    <div class="status-icon ${iconClass}">${icon}</div>
+                `;
+                listElement.appendChild(item);
             });
-
-
-            // ★★★★★★★ プレイ履歴の表示ロジック (複数カテゴリ対応) ★★★★★★★
-            function loadHistory(historyKey, listElementId, buttonElementId) {
-                const historyList = document.getElementById(listElementId);
-                const clearButton = document.getElementById(buttonElementId);
-                
-                let history = JSON.parse(localStorage.getItem(historyKey)) || [];
-
-                if (history.length > 0) {
-                    clearButton.classList.remove('hidden'); 
-                    history.forEach(result => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `
-                            <div class="history-item-header">
-                                <span>${result.score}点 / ${result.totalPoints}点</span>
-                                <span>${result.rank} ランク</span>
-                            </div>
-                            <div class="history-item-details">
-                                解答時間: ${result.time}秒 | ${result.date}
-                            </div>
-                        `;
-                        historyList.appendChild(li);
-                    });
-                } else {
-                    historyList.innerHTML = '<li>まだプレイ履歴がありません。</li>';
-                }
-
-                clearButton.addEventListener('click', function() {
-                    if (confirm('本当にこの履歴をすべて削除しますか？')) {
-                        localStorage.removeItem(historyKey); 
-                        location.reload(); 
+            
+            
+            // --- リセット機能 ---
+            const resetButton = document.getElementById('reset-achievements-btn');
+            
+            if (resetButton) {
+                resetButton.addEventListener('click', () => {
+                    // ユーザーに最終確認
+                    const isConfirmed = confirm('本当にすべての達成状況（⭐と👑）をリセットしますか？\nこの操作は元に戻せません。');
+                    
+                    if (isConfirmed) {
+                        // 'quizAchievements' のデータをlocalStorageから削除
+                        localStorage.removeItem('quizAchievements');
+                        
+                        // 削除したことを通知
+                        alert('達成状況をリセットしました。');
+                        
+                        // ページをリロードして表示に反映
+                        location.reload();
                     }
                 });
             }
             
-            // 3つの履歴キーでそれぞれ関数を呼び出す
-            loadHistory('calcHistory', 'history-list-calc', 'clear-history-calc');
-            loadHistory('algebraHistory', 'history-list-algebra', 'clear-history-algebra');
-            loadHistory('rootHistory', 'history-list-root', 'clear-history-root');
         });
     </script>
 
