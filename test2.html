@@ -63,19 +63,22 @@
             background-color: #c0392b;
         }
 
-#musou-background {
+        /* ===== 無双モード用の背景画像 ===== */
+        #musou-background {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-image: url('./hannya.png');
-            background-repeat: repeat;   /* 画像を繰り返して表示 */
-            background-size: 100px;      /* 画像のサイズを小さく設定 */
-            background-position: center; /* 念のため中央配置も残しておく */
+            background-image: url('./hannya.png'); /* 画像パス */
+            background-repeat: repeat;
+            background-size: 100px; 
+            background-position: center;
             opacity: 0.15;
             z-index: -1;
-        }        /* クイズ全体のコンテナ */
+        }
+
+        /* クイズ全体のコンテナ */
         .quiz-container {
             max-width: 600px;
             width: 90%;
@@ -138,22 +141,25 @@
         .controls { text-align: center; margin-top: 1em; height: 50px; }
         #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
         #next-btn:hover { background-color: #2980b9; }
+        
         #results { text-align: center; }
         #results h2 { color: #2c3e50; }
         #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
         #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
         #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
         #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        
         .hidden { display: none; }
+        
         /* ===== トップへ戻るボタンのスタイル ===== */
         .home-btn {
-            display: inline-block; /* ボタンのように振る舞わせる */
+            display: inline-block;
             margin-top: 1.5em;
             padding: 10px 25px;
             font-size: 1em;
             text-decoration: none;
             color: #fff;
-            background-color: #6c757d; /* 落ち着いたグレー */
+            background-color: #6c757d;
             border-radius: 5px;
             transition: background-color 0.2s;
         }
@@ -169,12 +175,8 @@
         <div class="mode-buttons">
             <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
             <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
-        </div>
+            </div>
         <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
-        <!-- <p style="margin-top: 2em; color: #6c757d;">
-            ノーマル: 15秒 / 警告5秒<br>
-            無双: 5秒 / 警告3秒
-        </p> -->
     </div>
 
     <div class="quiz-container hidden" id="quiz-main">
@@ -183,7 +185,7 @@
             <span class="timer-text" id="timer-text"></span>
         </div>
         
-        <h1>計算テスト</h1>
+        <h1>計算テスト (初級)</h1>
         <div id="question-area"></div>
         
         <div id="results" class="hidden">
@@ -205,9 +207,14 @@
 
     <script>
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        // ★ ここに、ご自身で作成した問題データを貼り付けてください ★
+        // ★ 
+        // ★  ここに test1.html 用の100問のデータバンクを貼り付け
+        // ★ 
+        // ★ const fullQuizDataBank = [ ... (100問) ... ];
+        // ★ 
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        // ===== 全100問の問題データバンク (4項計算・トラップ付き・正解位置均等) =====
+
+// ===== 全100問の問題データバンク (4項計算・トラップ付き・正解位置均等) =====
 const fullQuizDataBank = [
     // --- 【1番目が正解の問題】 (25問) ---
     { question: "3 + 5 \\times 2 - 4", choices: ["9", "12", "-3", "-11"], answer: "9", process: "\\begin{aligned} & 3 + 5 \\times 2 - 4 \\\\ &= 3 + 10 - 4 \\\\ &= 13 - 4 \\\\ &= 9 \\end{aligned}" },
@@ -313,7 +320,8 @@ const fullQuizDataBank = [
     { question: "9 - 6 + 10 \\div 5", choices: ["1.8", "3", "7", "5"], answer: "5", process: "\\begin{aligned} & 9 - 6 + 10 \\div 5 \\\\ &= 9 - 6 + 2 \\\\ &= 3 + 2 \\\\ &= 5 \\end{aligned}" },
     { question: "4 \\times 6 - 8 \\div 2", choices: ["8", "28", "10", "20"], answer: "20", process: "\\begin{aligned} & 4 \\times 6 - 8 \\div 2 \\\\ &= 24 - 4 \\\\ &= 20 \\end{aligned}" },
     { question: "1 + 7 \\times 2 - 5", choices: ["11", "10", "5", "10"], answer: "10", process: "\\begin{aligned} & 1 + 7 \\times 2 - 5 \\\\ &= 1 + 14 - 5 \\\\ &= 15 - 5 \\\\ &= 10 \\end{aligned}" }
-];        // ===== グローバル変数定義 =====
+];
+        // ===== グローバル変数定義 =====
         const modeSelectionScreen = document.getElementById('mode-selection');
         const quizMainScreen = document.getElementById('quiz-main');
         const musouBackground = document.getElementById('musou-background');
@@ -328,6 +336,7 @@ const fullQuizDataBank = [
         let selectedQuizData;
         let currentQuestionIndex = 0;
         let score = 0;
+        let currentMode = 'normal'; // 現在のモードを保存
         
         let timerInterval;
         let timeLeft;
@@ -337,26 +346,44 @@ const fullQuizDataBank = [
         let totalSolveTime = 0;
         let questionStartTime;
 
+        let currentRankSettings = {}; // ランク判定基準を保存
+
         // ===== モード選択とクイズ開始の処理 =====
         document.getElementById('normal-mode-btn').addEventListener('click', () => {
             startGame({
-                timeLimit: 15,
-                warningTime: 5,
-                isMusou: false
+                mode: 'normal',
+                timeLimit: 15,     // ★ 制限時間15秒
+                warningTime: 5,      // ★ 警告は残り5秒
+                isMusou: false,
+                sRankTime: 30,  
+                aRankTime: 45,  
+                bRankTime: 60   
             });
         });
 
         document.getElementById('musou-mode-btn').addEventListener('click', () => {
             startGame({
-                timeLimit: 5,
-                warningTime: 3,
-                isMusou: true
+                mode: 'musou',
+                timeLimit: 5,      // ★ 制限時間5秒
+                warningTime: 3,      // ★ 警告は残り3秒
+                isMusou: true,
+                sRankTime: 20,  
+                aRankTime: 30,  
+                bRankTime: 40   
             });
         });
 
         function startGame(settings) {
+            currentMode = settings.mode; // ★ モード名を保存
             TIME_LIMIT = settings.timeLimit;
             WARNING_TIME = settings.warningTime;
+            
+            // ランク判定基準をグローバル変数に保存
+            currentRankSettings = {
+                sRankTime: settings.sRankTime,
+                aRankTime: settings.aRankTime,
+                bRankTime: settings.bRankTime
+            };
 
             if (settings.isMusou) {
                 musouBackground.classList.remove('hidden');
@@ -419,7 +446,7 @@ const fullQuizDataBank = [
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer;
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
 
             if(choicesContainer) {
                 choicesContainer.classList.add('answered');
@@ -433,8 +460,9 @@ const fullQuizDataBank = [
             processDisplay.classList.remove('hidden');
 
             Array.from(choicesContainer.children).forEach(child => {
-                if (child.innerText === correctAnswer) {
-                    child.classList.add('correct');
+                const choiceText = child.textContent.replace(/\$/g, ''); 
+                if (choiceText === correctAnswer) {
+                     child.classList.add('correct');
                 }
             });
 
@@ -446,14 +474,11 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
-// ===== クイズ本体の関数 =====
+        // ===== クイズ本体の関数 =====
         function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
             
-            // ★変更点： onclick属性に渡す文字列から $ を除去（またはエスケープ）し、
-            // 表示用のHTMLにはそのまま $ を含める
             const choicesHtml = currentQuestion.choices.map(choice => {
-                // onclick属性用に $ を除去した文字列を作成
                 const onclickChoice = choice.replace(/\$/g, ''); 
                 return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
             }).join('');
@@ -469,20 +494,38 @@ const fullQuizDataBank = [
                 </div>
             `;
             
-            // 問題文をKaTeXでレンダリング
+            // 問題文のテキストから $ を除去してKaTeXでレンダリング
             const problemTextElement = document.getElementById('problem-text');
-            katex.render(currentQuestion.question, problemTextElement, { throwOnError: false, displayMode: true });
+            const questionKatexString = currentQuestion.question.slice(1, -1); 
+            try {
+                katex.render(questionKatexString, problemTextElement, { 
+                    throwOnError: true,
+                    displayMode: true
+                });
+            } catch (e) {
+                 console.error("KaTeX render error on question:", currentQuestion.question, e);
+                 problemTextElement.textContent = currentQuestion.question;
+            }
 
-            // ★追加：各選択肢のテキストをKaTeXでレンダリング
+            // 各選択肢のテキストから $ を除去してKaTeXでレンダリング
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                katex.render(element.textContent, element, { throwOnError: false, displayMode: false }); // displayMode: false でインライン表示
+                const katexString = element.textContent.slice(1, -1); 
+                try {
+                    katex.render(katexString, element, { 
+                        throwOnError: true, 
+                        displayMode: false 
+                    }); 
+                } catch (e) {
+                    console.error("KaTeX render error on choice:", element.textContent, e); 
+                    element.innerHTML = element.textContent; 
+                }
             });
             
-            // タイマー開始
             questionStartTime = Date.now();
             startTimer();
         }
+
         function selectAnswer(element, selectedChoice) {
             stopTimer();
             const timeTaken = (Date.now() - questionStartTime) / 1000;
@@ -493,11 +536,12 @@ const fullQuizDataBank = [
             choicesContainer.classList.add('answered');
 
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer;
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
 
-            if (selectedChoice === correctAnswer) {
+            if (selectedChoice === correctAnswer) { 
                 score++;
                 element.classList.add('correct');
                 feedbackMessage.textContent = "正解💐";
@@ -510,8 +554,12 @@ const fullQuizDataBank = [
                 katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
                 processDisplay.classList.remove('hidden');
 
+                 // 正解の選択肢をハイライト
                 Array.from(choicesContainer.children).forEach(child => {
-                    if (child.innerText === correctAnswer) child.classList.add('correct');
+                    const choiceText = child.textContent.replace(/\$/g, ''); 
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
                 });
             }
             
@@ -547,16 +595,50 @@ const fullQuizDataBank = [
 
             let rank = '';
             let rankColor = '';
+            let rankName = '';
 
-            if (totalSeconds <= 30) {
+            // ランク判定
+            if (totalSeconds <= currentRankSettings.sRankTime) {
                 rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
-            } else if (totalSeconds <= 45) {
+                rankName = 'S';
+            } else if (totalSeconds <= currentRankSettings.aRankTime) {
                 rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
-            } else if (totalSeconds <= 60) {
+                rankName = 'A';
+            } else if (totalSeconds <= currentRankSettings.bRankTime) {
                 rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+                rankName = 'B';
             } else {
                 rank = '💪 Cランク 💪'; rankColor = '#28a745';
+                rankName = 'C';
             }
+            
+            // ★ 達成状況（スター/クラウン）の保存処理 ★
+            const thisTestId = "test2"; // ★ test1.html なので "test1" ★
+            const historyKey = 'quizHistory'; // ★ test1.html の履歴キー ★
+            
+            if (finalScore === totalPoints && (rankName === 'S' || rankName === 'A')) {
+                let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+                const newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
+                const currentBest = achievements[thisTestId]; 
+
+                if (newLevel === 'musou' || currentBest !== 'musou') {
+                    achievements[thisTestId] = newLevel;
+                    localStorage.setItem('quizAchievements', JSON.stringify(achievements));
+                }
+            }
+            
+            // --- 履歴保存処理 ---
+             const newResult = {
+                score: finalScore,
+                totalPoints: totalPoints,
+                time: totalSeconds,
+                rank: rankName, 
+                date: new Date().toLocaleString('ja-JP') 
+            };
+            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+            history.unshift(newResult);
+            localStorage.setItem(historyKey, JSON.stringify(history)); 
+            // --- 保存処理ここまで ---
 
             resultsArea.classList.remove('hidden');
             
@@ -565,20 +647,14 @@ const fullQuizDataBank = [
 
             scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
             timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
-            rankInfoDisplay.textContent = rank;
+            rankInfoDisplay.textContent = rank; 
             rankInfoDisplay.style.color = rankColor;
         }
+        
+        // ===== 初期化 =====
+        // (DOMContentLoaded は不要。モード選択ボタンのクリックが起点となるため)
+
     </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
