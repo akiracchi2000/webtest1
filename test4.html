@@ -207,7 +207,7 @@
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
         // ★ ここに、ご自身で作成した問題データを貼り付けてください ★
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-// ===== 全100問の問題データバンク (2文字1次式整理・$完全版v4・トラップ付き・正解位置均等) =====
+// ===== 全100問の問題データバンク (2文字1次式整理・$完全版v5・トラップ付き・正解位置均等) =====
 const fullQuizDataBank = [
   // --- 【1番目が正解の問題】 (25問) ---
   { question: "$2(x + y) + 3(x - y)$", choices: ["$5x - y$", "$5x + 5y$", "$5x + y$", "$-x - y$"], answer: "$5x - y$", process: "\\begin{aligned} & 2(x + y) + 3(x - y) \\\\ &= 2x + 2y + 3x - 3y \\\\ &= (2x + 3x) + (2y - 3y) \\\\ &= 5x - y \\end{aligned}" },
@@ -313,8 +313,7 @@ const fullQuizDataBank = [
   { question: "$7(3x + y) - 20(x - y)$", choices: ["$x - 13y$", "$x + 20y$", "$41x + 27y$", "$x + 27y$"], answer: "$x + 27y$", process: "\\begin{aligned} & 7(3x + y) - 20(x - y) \\\\ &= 21x + 7y - 20x + 20y \\\\ &= (21x - 20x) + (7y + 20y) \\\\ &= x + 27y \\end{aligned}" },
   { question: "$-(6x - y) + 4(x + y)$", choices: ["$-2x + 3y$", "$-2x + 6y$", "$-10x + 5y$", "$-2x + 5y$"], answer: "$-2x + 5y$", process: "\\begin{aligned} & -(6x - y) + 4(x + y) \\\\ &= -6x + y + 4x + 4y \\\\ &= (-6x + 4x) + (y + 4y) \\\\ &= -2x + 5y \\end{aligned}" },
   { question: "$9(x - y) - 4(x - y)$", choices: ["$5x + 5y$", "$5x - 13y$", "$13x - 13y$", "$5x - 5y$"], answer: "$5x - 5y$", process: "\\begin{aligned} & 9(x - y) - 4(x - y) \\\\ &= 9x - 9y - 4x + 4y \\\\ &= (9x - 4x) + (-9y + 4y) \\\\ &= 5x - 5y \\end{aligned}" }
-];
-        // ===== グローバル変数定義 =====
+];        // ===== グローバル変数定義 =====
         const modeSelectionScreen = document.getElementById('mode-selection');
         const quizMainScreen = document.getElementById('quiz-main');
         const musouBackground = document.getElementById('musou-background');
