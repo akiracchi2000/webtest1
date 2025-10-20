@@ -9,16 +9,16 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* 上寄せに変更 */
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding-top: 3em; /* 上に余白を追加 */
+            padding: 3em 0;
             background-color: #f4f7f6;
         }
 
         .container {
             width: 90%;
-            max-width: 600px; /* 少し幅を広げる */
+            max-width: 600px;
             text-align: center;
         }
 
@@ -37,7 +37,7 @@
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
         }
-
+        
         nav ul { list-style-type: none; padding: 0; margin: 0; }
         nav li { margin-bottom: 1em; }
 
@@ -50,39 +50,90 @@
             border-radius: 8px;
             font-weight: bold;
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-            position: relative; /* ★ スターを配置するために追加 ★ */
+            position: relative; 
         }
         
-        /* ★ 難易度ごとの色指定 ★ */
-        .level-beginner {
-            background-color: #3498db; /* 青 */
-        }
-        .level-beginner:hover {
-            background-color: #2980b9; /* 濃い青 */
-        }
-        .level-intermediate {
-            background-color: #8e44ad; /* 紫 */
-        }
-        .level-intermediate:hover {
-            background-color: #732d91; /* 濃い紫 */
-        }
-        .level-advanced {
-            background-color: #c0392b; /* 赤 */
-        }
-        .level-advanced:hover {
-            background-color: #a93226; /* 濃い赤 */
-        }
+        /* 難易度ごとの色指定 */
+        .level-beginner { background-color: #3498db; }
+        .level-beginner:hover { background-color: #2980b9; }
+        .level-intermediate { background-color: #8e44ad; }
+        .level-intermediate:hover { background-color: #732d91; }
+        .level-advanced { background-color: #c0392b; }
+        .level-advanced:hover { background-color: #a93226; }
         
         nav a:hover {
            transform: translateY(-3px);
            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
         
-        /* ★ カテゴリー間のスペース ★ */
+        /* カテゴリー間のスペース */
         .category-separator {
             margin-top: 2.5em; 
         }
         
-        /* ★ 達成スター/クラウンのスタイル ★ */
-        .achievement-star {
-            position
+        /* 新しいボタンのスタイル (達成状況を見る) */
+        .achievements-btn {
+            display: inline-block;
+            margin-top: 2em;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #28a745; /* 緑色 */
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .achievements-btn:hover {
+            background-color: #218838;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="main-card">
+            <h1>学習テスト選択</h1>
+            <nav>
+                <ul>
+                    <li>
+                        <a href="./test1.html" class="level-beginner">正負の数計算タイムアタック（初級）</a>
+                    </li>
+                    <li>
+                        <a href="./test2.html" class="level-advanced">正負の数計算タイムアタック（上級）</a>
+                    </li>
+                    <li class="category-separator">
+                        <a href="./test3.html" class="level-beginner">1次式の文字式の整理タイムアタック（初級）</a>
+                    </li>
+                    <li>
+                        <a href="./test4.html" class="level-intermediate">1次式の文字式の整理タイムアタック（中級）</a>
+                    </li>
+                    <li>
+                        <a href="./test5.html" class="level-advanced">1次式の文字式の整理タイムアタック（上級）</a>
+                    </li>
+                    <li class="category-separator">
+                        <a href="./test6.html" class="level-beginner">平方根の計算タイムアタック（初級）</a>
+                    </li>
+                    <li>
+                        <a href="./test7.html" class="level-intermediate">平方根の計算タイムアタック（中級）</a>
+                    </li>
+                    <li>
+                        <a href="./test8.html" class="level-advanced">平方根の計算タイムアタック２（上級）</a>
+                    </li>
+                </ul>
+            </nav>
+            <a href="./achievements.html" class="achievements-btn">🏆 達成状況・プレイ履歴を見る 🏆</a>
+        </div>
+        
+</div>
+
+    <script>
+        // このページではJavaScriptは不要です。
+        // （達成状況の表示は achievements.html で行います）
+    </script>
+
+</body>
+</html>
