@@ -321,6 +321,15 @@ const fullQuizDataBank = [
 ];
 
 
+        <script>
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★ 
+        // ★  const fullQuizDataBank = [ ... ];
+        // ★  (↑ ここに test1.html 用の100問のデータバンクを貼り付け)
+        // ★ 
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+
         // ===== グローバル変数定義 =====
         const modeSelectionScreen = document.getElementById('mode-selection');
         const quizMainScreen = document.getElementById('quiz-main');
@@ -352,7 +361,6 @@ const fullQuizDataBank = [
         document.getElementById('normal-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'normal',
-                // ★ 3. モード別設定（ファイルごとに変える） ★
                 timeLimit: 15,     // ノーマル 制限時間15秒
                 warningTime: 5,      // ノーマル 警告は残り5秒
                 isMusou: false,
@@ -365,7 +373,6 @@ const fullQuizDataBank = [
         document.getElementById('musou-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'musou',
-                // ★ 3. モード別設定（ファイルごとに変える） ★
                 timeLimit: 5,      // 無双 制限時間5秒
                 warningTime: 3,      // 無双 警告は残り3秒
                 isMusou: true,
@@ -444,7 +451,7 @@ const fullQuizDataBank = [
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+            const correctAnswer = currentQuestion.answer; // ★ $ 除去処理は不要 ★
 
             if(choicesContainer) {
                 choicesContainer.classList.add('answered');
@@ -458,7 +465,7 @@ const fullQuizDataBank = [
             processDisplay.classList.remove('hidden');
 
             Array.from(choicesContainer.children).forEach(child => {
-                const choiceText = child.textContent.replace(/\$/g, ''); 
+                const choiceText = child.textContent; // ★ $ 除去処理は不要 ★
                 if (choiceText === correctAnswer) {
                      child.classList.add('correct');
                 }
@@ -472,13 +479,14 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
-        // ===== クイズ本体の関数 =====
+        // ===== クイズ本体の関数 (★修正版★) =====
         function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
             
+            // ★ $ 除去処理は不要 ★
             const choicesHtml = currentQuestion.choices.map(choice => {
-                const onclickChoice = choice.replace(/\$/g, ''); 
-                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+                // const onclickChoice = choice.replace(/\$/g, ''); // 不要
+                return `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`;
             }).join('');
 
             questionArea.innerHTML = `
@@ -492,10 +500,10 @@ const fullQuizDataBank = [
                 </div>
             `;
             
+            // ★ 問題文の $ 除去処理は不要 ★
             const problemTextElement = document.getElementById('problem-text');
-            const questionKatexString = currentQuestion.question.slice(1, -1); 
             try {
-                katex.render(questionKatexString, problemTextElement, { 
+                katex.render(currentQuestion.question, problemTextElement, { // .slice(1, -1) を削除
                     throwOnError: true,
                     displayMode: true
                 });
@@ -504,14 +512,11 @@ const fullQuizDataBank = [
                  problemTextElement.textContent = currentQuestion.question;
             }
 
+            // ★ 選択肢の $ 除去処理は不要 ★
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                // $ を含まない選択肢（整数の答えなど）の場合、エラーを避ける
-                let katexString = element.textContent;
-                if (katexString.startsWith('$') && katexString.endsWith('$')) {
-                     katexString = katexString.slice(1, -1); 
-                }
-
+                let katexString = element.textContent; // .slice(1, -1) を削除
+                
                 try {
                     katex.render(katexString, element, { 
                         throwOnError: true, 
@@ -537,7 +542,7 @@ const fullQuizDataBank = [
             choicesContainer.classList.add('answered');
 
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+            const correctAnswer = currentQuestion.answer; // ★ $ 除去処理は不要 ★
 
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
@@ -557,7 +562,7 @@ const fullQuizDataBank = [
 
                  // 正解の選択肢をハイライト
                 Array.from(choicesContainer.children).forEach(child => {
-                    const choiceText = child.textContent.replace(/\$/g, ''); 
+                    const choiceText = child.textContent; // ★ $ 除去処理は不要 ★
                     if (choiceText === correctAnswer) {
                          child.classList.add('correct');
                     }
@@ -612,15 +617,8 @@ const fullQuizDataBank = [
                 rankName = 'C';
             }
             
-            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
-            
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
-            const thisTestId = "test3"; 
-            // ★ (例: test2.html なら "test2" にする) ★
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
-            // ★ 5. 履歴キー（ファイルごとに変える） ★
+            // 達成状況（スター/クラウン）の保存処理
+            const thisTestId = "test1"; // ★ test1.html なので "test1" ★
             const historyKey = 'calcHistory'; // ★「正負の数」用のキー
             
             if (finalScore === totalPoints && (rankName === 'S' || rankName === 'A')) {
