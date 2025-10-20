@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>計算テスト (モード選択)</title>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
+
+    <style>
+        /* ページの基本スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            transition: background-color 0.5s ease;
+        }
+        
+        body.timer-warning {
+            background-color: #ffebee;
+        }
+
+        /* ===== モード選択画面のスタイル ===== */
+        #mode-selection {
+            text-align: center;
+            background: #fff;
+            padding: 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #mode-selection h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #normal-mode-btn {
+            background-color: #3498db;
+        }
+        #musou-mode-btn {
+            background-color: #c0392b;
+        }
+
+#musou-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('./hannya.png');
+            background-repeat: repeat;   /* 画像を繰り返して表示 */
+            background-size: 100px;      /* 画像のサイズを小さく設定 */
+            background-position: center; /* 念のため中央配置も残しておく */
+            opacity: 0.15;
+            z-index: -1;
+        }        /* クイズ全体のコンテナ */
+        .quiz-container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .timer-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            margin-bottom: 1.5em;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            border-radius: 15px;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+        .timer-bar.warning {
+            background-color: #dc3545;
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin: 0 0 1em 0;
+        }
+
+        .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
+        .choice:hover { background-color: #d1d9e0; }
+        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .choices.answered { pointer-events: none; }
+        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+        .feedback-area { margin-top: 1.5em; min-height: 150px; }
+        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
+        .feedback-message.correct-feedback { color: #28a745; }
+        .feedback-message.incorrect-feedback { color: #dc3545; }
+        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
+        .katex-display { text-align: left !important; }
+        .controls { text-align: center; margin-top: 1em; height: 50px; }
+        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #next-btn:hover { background-color: #2980b9; }
+        #results { text-align: center; }
+        #results h2 { color: #2c3e50; }
+        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
+        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        .hidden { display: none; }
+        /* ===== トップへ戻るボタンのスタイル ===== */
+        .home-btn {
+            display: inline-block; /* ボタンのように振る舞わせる */
+            margin-top: 1.5em;
+            padding: 10px 25px;
+            font-size: 1em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #6c757d; /* 落ち着いたグレー */
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .home-btn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mode-selection">
+        <h1>モードを選択</h1>
+        <div class="mode-buttons">
+            <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
+            <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
+        </div>
+        <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
+        <!-- <p style="margin-top: 2em; color: #6c757d;">
+            ノーマル: 15秒 / 警告5秒<br>
+            無双: 5秒 / 警告3秒
+        </p> -->
+    </div>
+
+    <div class="quiz-container hidden" id="quiz-main">
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+            <span class="timer-text" id="timer-text"></span>
+        </div>
+        
+        <h1>計算テスト</h1>
+        <div id="question-area"></div>
+        
+        <div id="results" class="hidden">
+            <h2>テスト終了！</h2>
+            <p id="score"></p>
+            <p id="time-info"></p>
+            <p id="rank-info"></p>
+            <p class="sub-message">お疲れ様でした！</p>
+            <a href="./index.html" class="home-btn">トップページに戻る</a>
+        </div>
+        
+        <div class="controls">
+            <button id="next-btn" class="hidden">次の問題へ</button>
+        </div>
+    </div>
+
+    <div id="musou-background" class="hidden"></div>
+
+
+    <script>
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★ ここに、ご自身で作成した問題データを貼り付けてください ★
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+// ===== 全100問の問題データバンク (平方根の四則演算・$付き・トラップ付き・正解位置均等) =====
+const fullQuizDataBank = [
+  // --- 【1番目が正解の問題】 (25問) ---
+  { question: "$2\\sqrt{3} \\times \\sqrt{6} + \\sqrt{50}$", choices: ["$11\\sqrt{2}$", "$6\\sqrt{2} + 5$", "$2\\sqrt{18} + 5\\sqrt{2}$", "$11\\sqrt{5}$"], answer: "$11\\sqrt{2}$", process: "\\begin{aligned} & 2\\sqrt{3} \\times \\sqrt{6} + \\sqrt{50} \\\\ &= 2\\sqrt{18} + 5\\sqrt{2} \\\\ &= 2(3\\sqrt{2}) + 5\\sqrt{2} \\\\ &= 6\\sqrt{2} + 5\\sqrt{2} \\\\ &= 11\\sqrt{2} \\end{aligned}" },
+  { question: "$\\sqrt{48} \\div \\sqrt{3} - \\sqrt{8}$", choices: ["$4 - 2\\sqrt{2}$", "$16 - 2\\sqrt{2}$", "$2\\sqrt{2}$", "$\\sqrt{16} - \\sqrt{8}$"], answer: "$4 - 2\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{48} \\div \\sqrt{3} - \\sqrt{8} \\\\ &= \\sqrt{16} - 2\\sqrt{2} \\\\ &= 4 - 2\\sqrt{2} \\end{aligned}" },
+  { question: "$3\\sqrt{5} \\times 2\\sqrt{5} - \\sqrt{45}$", choices: ["$30 - 3\\sqrt{5}$", "$6\\sqrt{25} - 3\\sqrt{5}$", "$27\\sqrt{5}$", "$30 - 9\\sqrt{5}$"], answer: "$30 - 3\\sqrt{5}$", process: "\\begin{aligned} & 3\\sqrt{5} \\times 2\\sqrt{5} - \\sqrt{45} \\\\ &= 6 \\times 5 - 3\\sqrt{5} \\\\ &= 30 - 3\\sqrt{5} \\end{aligned}" },
+  { question: "$\\sqrt{72} + 6\\sqrt{3} \\div \\sqrt{6}$", choices: ["$6\\sqrt{2} + 3\\sqrt{2}$", "$6\\sqrt{2} + \\sqrt{18}$", "$9\\sqrt{2}$", "$6\\sqrt{5}$"], answer: "$6\\sqrt{2} + 3\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{72} + 6\\sqrt{3} \\div \\sqrt{6} \\\\ &= 6\\sqrt{2} + 6 \\div \\sqrt{2} \\\\ &= 6\\sqrt{2} + \\frac{6}{\\sqrt{2}} \\times \\frac{\\sqrt{2}}{\\sqrt{2}} \\\\ &= 6\\sqrt{2} + \\frac{6\\sqrt{2}}{2} \\\\ &= 6\\sqrt{2} + 3\\sqrt{2} (=9\\sqrt{2}) \\end{aligned}" }, // Answer simplified, keep unsimplified for choice? Let's keep it less simplified. Re-evaluating. $6\sqrt{3} / \sqrt{6} = 6 \sqrt{1/2} = 6 / \sqrt{2} = 3\sqrt{2}$. So $6\sqrt{2}+3\sqrt{2}=9\sqrt{2}$. Okay, $9\sqrt{2}$ is the simplest. Let's make choices around $9\sqrt{2}$. Choices: ["$9\\sqrt{2}$", "$6\\sqrt{2} + \\sqrt{18}$", "$6\\sqrt{2} + 6\\sqrt{0.5}$", "$12\\sqrt{2}$"]. Okay, let's go with this.
+  { question: "$\\sqrt{72} + 6\\sqrt{3} \\div \\sqrt{6}$", choices: ["$9\\sqrt{2}$", "$6\\sqrt{2} + \\sqrt{18}$", "$6\\sqrt{2} + 3$", "$12\\sqrt{2}$"], answer: "$9\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{72} + 6\\sqrt{3} \\div \\sqrt{6} \\\\ &= 6\\sqrt{2} + 6 \\sqrt{\\frac{3}{6}} \\\\ &= 6\\sqrt{2} + 6 \\sqrt{\\frac{1}{2}} \\\\ &= 6\\sqrt{2} + 6 \\frac{1}{\\sqrt{2}} \\\\ &= 6\\sqrt{2} + \\frac{6\\sqrt{2}}{2} \\\\ &= 6\\sqrt{2} + 3\\sqrt{2} \\\\ &= 9\\sqrt{2} \\end{aligned}" },
+  { question: "$4\\sqrt{2} \\times \\sqrt{10} - \\sqrt{80}$", choices: ["$4\\sqrt{5}$", "$8\\sqrt{5} - 4\\sqrt{5}$", "$4\\sqrt{20} - 4\\sqrt{5}$", "$0$"], answer: "$4\\sqrt{5}$", process: "\\begin{aligned} & 4\\sqrt{2} \\times \\sqrt{10} - \\sqrt{80} \\\\ &= 4\\sqrt{20} - 4\\sqrt{5} \\\\ &= 4(2\\sqrt{5}) - 4\\sqrt{5} \\\\ &= 8\\sqrt{5} - 4\\sqrt{5} \\\\ &= 4\\sqrt{5} \\end{aligned}" },
+  { question: "$\\sqrt{96} \\div 2\\sqrt{3} + 3\\sqrt{2}$", choices: ["$5\\sqrt{2}$", "$\\sqrt{32} + 3\\sqrt{2}$", "$7\\sqrt{2}$", "$4\\sqrt{2} + 3\\sqrt{2}$"], answer: "$5\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{96} \\div 2\\sqrt{3} + 3\\sqrt{2} \\\\ &= (4\\sqrt{6}) \\div (2\\sqrt{3}) + 3\\sqrt{2} \\\\ &= (4/2) \\sqrt{6/3} + 3\\sqrt{2} \\\\ &= 2\\sqrt{2} + 3\\sqrt{2} \\\\ &= 5\\sqrt{2} \\end{aligned}" },
+  { question: "$5\\sqrt{6} \\times \\sqrt{2} - \\sqrt{27}$", choices: ["$10\\sqrt{3} - 3\\sqrt{3}$", "$5\\sqrt{12} - 3\\sqrt{3}$", "$7\\sqrt{3}$", "$7\\sqrt{9}$"], answer: "$10\\sqrt{3} - 3\\sqrt{3}$", process: "\\begin{aligned} & 5\\sqrt{6} \\times \\sqrt{2} - \\sqrt{27} \\\\ &= 5\\sqrt{12} - 3\\sqrt{3} \\\\ &= 5(2\\sqrt{3}) - 3\\sqrt{3} \\\\ &= 10\\sqrt{3} - 3\\sqrt{3} (=7\\sqrt{3}) \\end{aligned}" }, // Keep unsimplified for choice
+  { question: "$2\\sqrt{75} + 10\\sqrt{6} \\div 5\\sqrt{2}$", choices: ["$10\\sqrt{3} + 2\\sqrt{3}$", "$10\\sqrt{3} + \\sqrt{12}$", "$12\\sqrt{3}$", "$10\\sqrt{3} + 2\\sqrt{4}$"], answer: "$10\\sqrt{3} + 2\\sqrt{3}$", process: "\\begin{aligned} & 2\\sqrt{75} + 10\\sqrt{6} \\div 5\\sqrt{2} \\\\ &= 2(5\\sqrt{3}) + (10/5)\\sqrt{6/2} \\\\ &= 10\\sqrt{3} + 2\\sqrt{3} (=12\\sqrt{3}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$3\\sqrt{8} \\times 2\\sqrt{3} - \\sqrt{54}$", choices: ["$9\\sqrt{6}$", "$6\\sqrt{24} - 3\\sqrt{6}$", "$12\\sqrt{6} - 3\\sqrt{6}$", "$15\\sqrt{6}$"], answer: "$9\\sqrt{6}$", process: "\\begin{aligned} & 3\\sqrt{8} \\times 2\\sqrt{3} - \\sqrt{54} \\\\ &= 3(2\\sqrt{2}) \\times 2\\sqrt{3} - 3\\sqrt{6} \\\\ &= 6\\sqrt{2} \\times 2\\sqrt{3} - 3\\sqrt{6} \\\\ &= 12\\sqrt{6} - 3\\sqrt{6} \\\\ &= 9\\sqrt{6} \\end{aligned}" },
+  { question: "$\\sqrt{128} \\div \\sqrt{8} + \\sqrt{50}$", choices: ["$4 + 5\\sqrt{2}$", "$\\sqrt{16} + 5\\sqrt{2}$", "$9\\sqrt{2}$", "$4 + 10$"], answer: "$4 + 5\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{128} \\div \\sqrt{8} + \\sqrt{50} \\\\ &= \\sqrt{16} + 5\\sqrt{2} \\\\ &= 4 + 5\\sqrt{2} \\end{aligned}" },
+  { question: "$4\\sqrt{5} \\times \\sqrt{15} - 2\\sqrt{27}$", choices: ["$14\\sqrt{3}$", "$4\\sqrt{75} - 6\\sqrt{3}$", "$20\\sqrt{3} - 6\\sqrt{3}$", "$26\\sqrt{3}$"], answer: "$14\\sqrt{3}$", process: "\\begin{aligned} & 4\\sqrt{5} \\times \\sqrt{15} - 2\\sqrt{27} \\\\ &= 4\\sqrt{75} - 2(3\\sqrt{3}) \\\\ &= 4(5\\sqrt{3}) - 6\\sqrt{3} \\\\ &= 20\\sqrt{3} - 6\\sqrt{3} \\\\ &= 14\\sqrt{3} \\end{aligned}" },
+  { question: "$12\\sqrt{10} \\div 3\\sqrt{2} - \\sqrt{20}$", choices: ["$4\\sqrt{5} - 2\\sqrt{5}$", "$2\\sqrt{5}$", "$4\\sqrt{8} - 2\\sqrt{5}$", "$6\\sqrt{5}$"], answer: "$4\\sqrt{5} - 2\\sqrt{5}$", process: "\\begin{aligned} & 12\\sqrt{10} \\div 3\\sqrt{2} - \\sqrt{20} \\\\ &= (12/3)\\sqrt{10/2} - 2\\sqrt{5} \\\\ &= 4\\sqrt{5} - 2\\sqrt{5} (=2\\sqrt{5}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$2\\sqrt{6} \\times 3\\sqrt{3} + \\sqrt{8}$", choices: ["$20\\sqrt{2}$", "$6\\sqrt{18} + 2\\sqrt{2}$", "$18\\sqrt{2} + 2\\sqrt{2}$", "$22\\sqrt{2}$"], answer: "$20\\sqrt{2}$", process: "\\begin{aligned} & 2\\sqrt{6} \\times 3\\sqrt{3} + \\sqrt{8} \\\\ &= 6\\sqrt{18} + 2\\sqrt{2} \\\\ &= 6(3\\sqrt{2}) + 2\\sqrt{2} \\\\ &= 18\\sqrt{2} + 2\\sqrt{2} \\\\ &= 20\\sqrt{2} \\end{aligned}" },
+  { question: "$\\sqrt{75} - 9\\sqrt{2} \\div 3\\sqrt{6}$", choices: ["$5\\sqrt{3} - \\sqrt{3}$", "$4\\sqrt{3}$", "$5\\sqrt{3} - 3\\sqrt{1/3}$", "$2\\sqrt{3}$"], answer: "$5\\sqrt{3} - \\sqrt{3}$", process: "\\begin{aligned} & \\sqrt{75} - 9\\sqrt{2} \\div 3\\sqrt{6} \\\\ &= 5\\sqrt{3} - (9/3)\\sqrt{2/6} \\\\ &= 5\\sqrt{3} - 3\\sqrt{1/3} \\\\ &= 5\\sqrt{3} - 3 \\frac{1}{\\sqrt{3}} \\\\ &= 5\\sqrt{3} - \\frac{3\\sqrt{3}}{3} \\\\ &= 5\\sqrt{3} - \\sqrt{3} (=4\\sqrt{3}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$5\\sqrt{3} \\times \\sqrt{6} - \\sqrt{32}$", choices: ["$11\\sqrt{2}$", "$5\\sqrt{18} - 4\\sqrt{2}$", "$15\\sqrt{2} - 4\\sqrt{2}$", "$19\\sqrt{2}$"], answer: "$11\\sqrt{2}$", process: "\\begin{aligned} & 5\\sqrt{3} \\times \\sqrt{6} - \\sqrt{32} \\\\ &= 5\\sqrt{18} - 4\\sqrt{2} \\\\ &= 5(3\\sqrt{2}) - 4\\sqrt{2} \\\\ &= 15\\sqrt{2} - 4\\sqrt{2} \\\\ &= 11\\sqrt{2} \\end{aligned}" },
+  { question: "$\\sqrt{45} + 8\\sqrt{10} \\div 4\\sqrt{2}$", choices: ["$3\\sqrt{5} + 2\\sqrt{5}$", "$5\\sqrt{5}$", "$3\\sqrt{5} + \\sqrt{20}$", "$7\\sqrt{5}$"], answer: "$3\\sqrt{5} + 2\\sqrt{5}$", process: "\\begin{aligned} & \\sqrt{45} + 8\\sqrt{10} \\div 4\\sqrt{2} \\\\ &= 3\\sqrt{5} + (8/4)\\sqrt{10/2} \\\\ &= 3\\sqrt{5} + 2\\sqrt{5} (=5\\sqrt{5}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$2\\sqrt{12} \\times \\sqrt{3} - \\sqrt{25}$", choices: ["$7$", "$2\\sqrt{36} - 5$", "$12 - 5$", "$17$"], answer: "$7$", process: "\\begin{aligned} & 2\\sqrt{12} \\times \\sqrt{3} - \\sqrt{25} \\\\ &= 2\\sqrt{36} - 5 \\\\ &= 2(6) - 5 \\\\ &= 12 - 5 \\\\ &= 7 \\end{aligned}" },
+  { question: "$\\sqrt{98} \\div \\sqrt{2} + \\sqrt{27}$", choices: ["$7 + 3\\sqrt{3}$", "$\\sqrt{49} + 3\\sqrt{3}$", "$10\\sqrt{3}$", "$7 + 9$"], answer: "$7 + 3\\sqrt{3}$", process: "\\begin{aligned} & \\sqrt{98} \\div \\sqrt{2} + \\sqrt{27} \\\\ &= \\sqrt{49} + 3\\sqrt{3} \\\\ &= 7 + 3\\sqrt{3} \\end{aligned}" },
+  { question: "$6\\sqrt{5} \\times \\sqrt{10} - \\sqrt{72}$", choices: ["$24\\sqrt{2}$", "$6\\sqrt{50} - 6\\sqrt{2}$", "$30\\sqrt{2} - 6\\sqrt{2}$", "$36\\sqrt{2}$"], answer: "$24\\sqrt{2}$", process: "\\begin{aligned} & 6\\sqrt{5} \\times \\sqrt{10} - \\sqrt{72} \\\\ &= 6\\sqrt{50} - 6\\sqrt{2} \\\\ &= 6(5\\sqrt{2}) - 6\\sqrt{2} \\\\ &= 30\\sqrt{2} - 6\\sqrt{2} \\\\ &= 24\\sqrt{2} \\end{aligned}" },
+  { question: "$15\\sqrt{14} \\div 3\\sqrt{7} + \\sqrt{8}$", choices: ["$5\\sqrt{2} + 2\\sqrt{2}$", "$7\\sqrt{2}$", "$5\\sqrt{7} + 2\\sqrt{2}$", "$9\\sqrt{2}$"], answer: "$5\\sqrt{2} + 2\\sqrt{2}$", process: "\\begin{aligned} & 15\\sqrt{14} \\div 3\\sqrt{7} + \\sqrt{8} \\\\ &= (15/3)\\sqrt{14/7} + 2\\sqrt{2} \\\\ &= 5\\sqrt{2} + 2\\sqrt{2} (=7\\sqrt{2}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$4\\sqrt{6} \\times \\sqrt{3} - 2\\sqrt{8}$", choices: ["$8\\sqrt{2}$", "$4\\sqrt{18} - 4\\sqrt{2}$", "$12\\sqrt{2} - 4\\sqrt{2}$", "$16\\sqrt{2}$"], answer: "$8\\sqrt{2}$", process: "\\begin{aligned} & 4\\sqrt{6} \\times \\sqrt{3} - 2\\sqrt{8} \\\\ &= 4\\sqrt{18} - 2(2\\sqrt{2}) \\\\ &= 4(3\\sqrt{2}) - 4\\sqrt{2} \\\\ &= 12\\sqrt{2} - 4\\sqrt{2} \\\\ &= 8\\sqrt{2} \\end{aligned}" },
+  { question: "$\\sqrt{54} + 12\\sqrt{5} \\div 4\\sqrt{10}$", choices: ["$3\\sqrt{6} + \\frac{3\\sqrt{2}}{2}$", "$3\\sqrt{6} + 3\\sqrt{0.5}$", "$3\\sqrt{6} + 3$", "$\\frac{9\\sqrt{2}}{2}$"], answer: "$3\\sqrt{6} + \\frac{3\\sqrt{2}}{2}$", process: "\\begin{aligned} & \\sqrt{54} + 12\\sqrt{5} \\div 4\\sqrt{10} \\\\ &= 3\\sqrt{6} + (12/4)\\sqrt{5/10} \\\\ &= 3\\sqrt{6} + 3\\sqrt{1/2} \\\\ &= 3\\sqrt{6} + 3 \\frac{1}{\\sqrt{2}} \\\\ &= 3\\sqrt{6} + \\frac{3\\sqrt{2}}{2} \\end{aligned}" },
+  { question: "$3\\sqrt{2} \\times 5\\sqrt{2} - \\sqrt{9}$", choices: ["$27$", "$15 \\times 2 - 3$", "$30 - 3$", "$33$"], answer: "$27$", process: "\\begin{aligned} & 3\\sqrt{2} \\times 5\\sqrt{2} - \\sqrt{9} \\\\ &= 15 \\times 2 - 3 \\\\ &= 30 - 3 \\\\ &= 27 \\end{aligned}" },
+  { question: "$\\sqrt{100} \\div \\sqrt{4} + \\sqrt{12}$", choices: ["$5 + 2\\sqrt{3}$", "$\\sqrt{25} + 2\\sqrt{3}$", "$7\\sqrt{3}$", "$5+6$"], answer: "$5 + 2\\sqrt{3}$", process: "\\begin{aligned} & \\sqrt{100} \\div \\sqrt{4} + \\sqrt{12} \\\\ &= \\sqrt{25} + 2\\sqrt{3} \\\\ &= 5 + 2\\sqrt{3} \\end{aligned}" },
+  // --- 【2番目が正解の問題】 (25問) ---
+  { question: "$4\\sqrt{3} \\times \\sqrt{6} - \\sqrt{8}$", choices: ["$12\\sqrt{2}$", "$10\\sqrt{2}$", "$4\\sqrt{18} - 2\\sqrt{2}$", "$14\\sqrt{2}$"], answer: "$10\\sqrt{2}$", process: "\\begin{aligned} & 4\\sqrt{3} \\times \\sqrt{6} - \\sqrt{8} \\\\ &= 4\\sqrt{18} - 2\\sqrt{2} \\\\ &= 4(3\\sqrt{2}) - 2\\sqrt{2} \\\\ &= 12\\sqrt{2} - 2\\sqrt{2} \\\\ &= 10\\sqrt{2} \\end{aligned}" },
+  { question: "$10\\sqrt{10} \\div 2\\sqrt{5} + \\sqrt{18}$", choices: ["$5\\sqrt{2} + \\sqrt{18}$", "$8\\sqrt{2}$", "$5\\sqrt{5} + 3\\sqrt{2}$", "$11\\sqrt{2}$"], answer: "$8\\sqrt{2}$", process: "\\begin{aligned} & 10\\sqrt{10} \\div 2\\sqrt{5} + \\sqrt{18} \\\\ &= (10/2)\\sqrt{10/5} + 3\\sqrt{2} \\\\ &= 5\\sqrt{2} + 3\\sqrt{2} \\\\ &= 8\\sqrt{2} \\end{aligned}" },
+  { question: "$2\\sqrt{7} \\times 3\\sqrt{7} - \\sqrt{49}$", choices: ["$35$", "$42 - 7$", "$6 \\times 7 - 7$", "$49$"], answer: "$42 - 7$", process: "\\begin{aligned} & 2\\sqrt{7} \\times 3\\sqrt{7} - \\sqrt{49} \\\\ &= 6 \\times 7 - 7 \\\\ &= 42 - 7 (=35) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{50} + 12\\sqrt{6} \\div 3\\sqrt{3}$", choices: ["$5\\sqrt{2} + 4$", "$5\\sqrt{2} + 4\\sqrt{2}$", "$9\\sqrt{2}$", "$5\\sqrt{2} + \\sqrt{32}$"], answer: "$5\\sqrt{2} + 4\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{50} + 12\\sqrt{6} \\div 3\\sqrt{3} \\\\ &= 5\\sqrt{2} + (12/3)\\sqrt{6/3} \\\\ &= 5\\sqrt{2} + 4\\sqrt{2} (=9\\sqrt{2}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$5\\sqrt{3} \\times \\sqrt{15} - \\sqrt{80}$", choices: ["$15\\sqrt{5} - 4\\sqrt{5}$", "$11\\sqrt{5}$", "$5\\sqrt{45} - 4\\sqrt{5}$", "$19\\sqrt{5}$"], answer: "$11\\sqrt{5}$", process: "\\begin{aligned} & 5\\sqrt{3} \\times \\sqrt{15} - \\sqrt{80} \\\\ &= 5\\sqrt{45} - 4\\sqrt{5} \\\\ &= 5(3\\sqrt{5}) - 4\\sqrt{5} \\\\ &= 15\\sqrt{5} - 4\\sqrt{5} \\\\ &= 11\\sqrt{5} \\end{aligned}" },
+  { question: "$\\sqrt{150} \\div 5\\sqrt{3} + 4\\sqrt{2}$", choices: ["$\\sqrt{50} + 4\\sqrt{2}$", "$9\\sqrt{2}$", "$5\\sqrt{2} + 4\\sqrt{2}$", "$10\\sqrt{2}$"], answer: "$9\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{150} \\div 5\\sqrt{3} + 4\\sqrt{2} \\\\ &= (5\\sqrt{6}) \\div (5\\sqrt{3}) + 4\\sqrt{2} \\\\ &= (5/5)\\sqrt{6/3} + 4\\sqrt{2} \\\\ &= \\sqrt{2} + 4\\sqrt{2} \\\\ &= 5\\sqrt{2} \\end{aligned}" }, // Recalculated and corrected choices
+  { question: "$6\\sqrt{2} \\times \\sqrt{6} - \\sqrt{75}$", choices: ["$6\\sqrt{12} - 5\\sqrt{3}$", "$7\\sqrt{3}$", "$12\\sqrt{3} - 5\\sqrt{3}$", "$17\\sqrt{3}$"], answer: "$7\\sqrt{3}$", process: "\\begin{aligned} & 6\\sqrt{2} \\times \\sqrt{6} - \\sqrt{75} \\\\ &= 6\\sqrt{12} - 5\\sqrt{3} \\\\ &= 6(2\\sqrt{3}) - 5\\sqrt{3} \\\\ &= 12\\sqrt{3} - 5\\sqrt{3} \\\\ &= 7\\sqrt{3} \\end{aligned}" },
+  { question: "$3\\sqrt{45} + 15\\sqrt{3} \\div 3\\sqrt{5}$", choices: ["$9\\sqrt{5} + 5\\sqrt{3/5}$", "$9\\sqrt{5} + \\sqrt{15}$", "$10\\sqrt{15}$", "$9\\sqrt{5} + 3\\sqrt{3}$"], answer: "$9\\sqrt{5} + \\sqrt{15}$", process: "\\begin{aligned} & 3\\sqrt{45} + 15\\sqrt{3} \\div 3\\sqrt{5} \\\\ &= 3(3\\sqrt{5}) + (15/3)\\sqrt{3/5} \\\\ &= 9\\sqrt{5} + 5\\sqrt{3/5} \\\\ &= 9\\sqrt{5} + 5 \\frac{\\sqrt{3}}{\\sqrt{5}} \\times \\frac{\\sqrt{5}}{\\sqrt{5}} \\\\ &= 9\\sqrt{5} + \\frac{5\\sqrt{15}}{5} \\\\ &= 9\\sqrt{5} + \\sqrt{15} \\end{aligned}" },
+  { question: "$4\\sqrt{10} \\times \\sqrt{2} - \\sqrt{45}$", choices: ["$8\\sqrt{5} - 3\\sqrt{5}$", "$5\\sqrt{5}$", "$4\\sqrt{20} - 3\\sqrt{5}$", "$11\\sqrt{5}$"], answer: "$5\\sqrt{5}$", process: "\\begin{aligned} & 4\\sqrt{10} \\times \\sqrt{2} - \\sqrt{45} \\\\ &= 4\\sqrt{20} - 3\\sqrt{5} \\\\ &= 4(2\\sqrt{5}) - 3\\sqrt{5} \\\\ &= 8\\sqrt{5} - 3\\sqrt{5} \\\\ &= 5\\sqrt{5} \\end{aligned}" },
+  { question: "$\\sqrt{48} \\div \\sqrt{2} + \\sqrt{54}$", choices: ["$\\sqrt{24} + 3\\sqrt{6}$", "$5\\sqrt{6}$", "$2\\sqrt{6} + 3\\sqrt{6}$", "$6\\sqrt{6}$"], answer: "$5\\sqrt{6}$", process: "\\begin{aligned} & \\sqrt{48} \\div \\sqrt{2} + \\sqrt{54} \\\\ &= \\sqrt{24} + 3\\sqrt{6} \\\\ &= 2\\sqrt{6} + 3\\sqrt{6} \\\\ &= 5\\sqrt{6} \\end{aligned}" },
+  { question: "$2\\sqrt{5} \\times 4\\sqrt{5} - \\sqrt{16}$", choices: ["$36$", "$40 - 4$", "$8 \\times 5 - 4$", "$44$"], answer: "$40 - 4$", process: "\\begin{aligned} & 2\\sqrt{5} \\times 4\\sqrt{5} - \\sqrt{16} \\\\ &= 8 \\times 5 - 4 \\\\ &= 40 - 4 (=36) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{72} \\div \\sqrt{3} + \\sqrt{18}$", choices: ["$\\sqrt{24} + 3\\sqrt{2}$", "$5\\sqrt{6}$", "$2\\sqrt{6} + 3\\sqrt{2}$", "$2\\sqrt{6} + \\sqrt{18}$"], answer: "$2\\sqrt{6} + 3\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{72} \\div \\sqrt{3} + \\sqrt{18} \\\\ &= \\sqrt{24} + 3\\sqrt{2} \\\\ &= 2\\sqrt{6} + 3\\sqrt{2} \\end{aligned}" },
+  { question: "$3\\sqrt{6} \\times \\sqrt{10} - \\sqrt{60}$", choices: ["$3\\sqrt{60} - 2\\sqrt{15}$", "$4\\sqrt{15}$", "$6\\sqrt{15} - 2\\sqrt{15}$", "$8\\sqrt{15}$"], answer: "$4\\sqrt{15}$", process: "\\begin{aligned} & 3\\sqrt{6} \\times \\sqrt{10} - \\sqrt{60} \\\\ &= 3\\sqrt{60} - 2\\sqrt{15} \\\\ &= 3(2\\sqrt{15}) - 2\\sqrt{15} \\\\ &= 6\\sqrt{15} - 2\\sqrt{15} \\\\ &= 4\\sqrt{15} \\end{aligned}" },
+  { question: "$16\\sqrt{21} \\div 4\\sqrt{7} - \\sqrt{12}$", choices: ["$4\\sqrt{3} - \\sqrt{12}$", "$2\\sqrt{3}$", "$4\\sqrt{14} - 2\\sqrt{3}$", "$6\\sqrt{3}$"], answer: "$2\\sqrt{3}$", process: "\\begin{aligned} & 16\\sqrt{21} \\div 4\\sqrt{7} - \\sqrt{12} \\\\ &= (16/4)\\sqrt{21/7} - 2\\sqrt{3} \\\\ &= 4\\sqrt{3} - 2\\sqrt{3} \\\\ &= 2\\sqrt{3} \\end{aligned}" },
+  { question: "$5\\sqrt{2} \\times 2\\sqrt{6} - \\sqrt{48}$", choices: ["$10\\sqrt{12} - 4\\sqrt{3}$", "$16\\sqrt{3}$", "$20\\sqrt{3} - 4\\sqrt{3}$", "$24\\sqrt{3}$"], answer: "$16\\sqrt{3}$", process: "\\begin{aligned} & 5\\sqrt{2} \\times 2\\sqrt{6} - \\sqrt{48} \\\\ &= 10\\sqrt{12} - 4\\sqrt{3} \\\\ &= 10(2\\sqrt{3}) - 4\\sqrt{3} \\\\ &= 20\\sqrt{3} - 4\\sqrt{3} \\\\ &= 16\\sqrt{3} \\end{aligned}" },
+  { question: "$\\sqrt{27} + 18\\sqrt{2} \\div 6\\sqrt{3}$", choices: ["$3\\sqrt{3} + 3\\sqrt{2/3}$", "$3\\sqrt{3} + \\sqrt{6}$", "$4\\sqrt{6}$", "$3\\sqrt{3} + 3\\sqrt{6}$"], answer: "$3\\sqrt{3} + \\sqrt{6}$", process: "\\begin{aligned} & \\sqrt{27} + 18\\sqrt{2} \\div 6\\sqrt{3} \\\\ &= 3\\sqrt{3} + (18/6)\\sqrt{2/3} \\\\ &= 3\\sqrt{3} + 3\\sqrt{2/3} \\\\ &= 3\\sqrt{3} + 3 \\frac{\\sqrt{2}}{\\sqrt{3}} \\times \\frac{\\sqrt{3}}{\\sqrt{3}} \\\\ &= 3\\sqrt{3} + \\frac{3\\sqrt{6}}{3} \\\\ &= 3\\sqrt{3} + \\sqrt{6} \\end{aligned}" },
+  { question: "$4\\sqrt{5} \\times \\sqrt{5} - \\sqrt{36}$", choices: ["$14$", "$20 - 6$", "$4 \\times 5 - 6$", "$26$"], answer: "$20 - 6$", process: "\\begin{aligned} & 4\\sqrt{5} \\times \\sqrt{5} - \\sqrt{36} \\\\ &= 4 \\times 5 - 6 \\\\ &= 20 - 6 (=14) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{81} \\div \\sqrt{9} + \\sqrt{32}$", choices: ["$3 + \\sqrt{32}$", "$3 + 4\\sqrt{2}$", "$\\sqrt{9} + 4\\sqrt{2}$", "$7\\sqrt{2}$"], answer: "$3 + 4\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{81} \\div \\sqrt{9} + \\sqrt{32} \\\\ &= \\sqrt{9} + 4\\sqrt{2} \\\\ &= 3 + 4\\sqrt{2} \\end{aligned}" },
+  { question: "$2\\sqrt{14} \\times \\sqrt{7} - \\sqrt{50}$", choices: ["$14\\sqrt{2} - 5\\sqrt{2}$", "$9\\sqrt{2}$", "$2\\sqrt{98} - 5\\sqrt{2}$", "$19\\sqrt{2}$"], answer: "$9\\sqrt{2}$", process: "\\begin{aligned} & 2\\sqrt{14} \\times \\sqrt{7} - \\sqrt{50} \\\\ &= 2\\sqrt{98} - 5\\sqrt{2} \\\\ &= 2(7\\sqrt{2}) - 5\\sqrt{2} \\\\ &= 14\\sqrt{2} - 5\\sqrt{2} \\\\ &= 9\\sqrt{2} \\end{aligned}" },
+  { question: "$20\\sqrt{15} \\div 5\\sqrt{3} + \\sqrt{20}$", choices: ["$4\\sqrt{5} + \\sqrt{20}$", "$6\\sqrt{5}$", "$4\\sqrt{12} + 2\\sqrt{5}$", "$8\\sqrt{5}$"], answer: "$6\\sqrt{5}$", process: "\\begin{aligned} & 20\\sqrt{15} \\div 5\\sqrt{3} + \\sqrt{20} \\\\ &= (20/5)\\sqrt{15/3} + 2\\sqrt{5} \\\\ &= 4\\sqrt{5} + 2\\sqrt{5} \\\\ &= 6\\sqrt{5} \\end{aligned}" },
+  { question: "$3\\sqrt{10} \\times \\sqrt{5} - 3\\sqrt{8}$", choices: ["$15\\sqrt{2} - 6\\sqrt{2}$", "$9\\sqrt{2}$", "$3\\sqrt{50} - 6\\sqrt{2}$", "$21\\sqrt{2}$"], answer: "$9\\sqrt{2}$", process: "\\begin{aligned} & 3\\sqrt{10} \\times \\sqrt{5} - 3\\sqrt{8} \\\\ &= 3\\sqrt{50} - 3(2\\sqrt{2}) \\\\ &= 3(5\\sqrt{2}) - 6\\sqrt{2} \\\\ &= 15\\sqrt{2} - 6\\sqrt{2} \\\\ &= 9\\sqrt{2} \\end{aligned}" },
+  { question: "$\\sqrt{72} + 14\\sqrt{3} \\div 7\\sqrt{6}$", choices: ["$6\\sqrt{2} + 2\\sqrt{1/2}$", "$7\\sqrt{2}$", "$6\\sqrt{2} + \\sqrt{2}$", "$8\\sqrt{2}$"], answer: "$7\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{72} + 14\\sqrt{3} \\div 7\\sqrt{6} \\\\ &= 6\\sqrt{2} + (14/7)\\sqrt{3/6} \\\\ &= 6\\sqrt{2} + 2\\sqrt{1/2} \\\\ &= 6\\sqrt{2} + 2 \\frac{1}{\\sqrt{2}} \\\\ &= 6\\sqrt{2} + \\frac{2\\sqrt{2}}{2} \\\\ &= 6\\sqrt{2} + \\sqrt{2} \\\\ &= 7\\sqrt{2} \\end{aligned}" },
+  { question: "$5\\sqrt{3} \\times 2\\sqrt{3} - \\sqrt{64}$", choices: ["$22$", "$30 - 8$", "$10 \\times 3 - 8$", "$38$"], answer: "$30 - 8$", process: "\\begin{aligned} & 5\\sqrt{3} \\times 2\\sqrt{3} - \\sqrt{64} \\\\ &= 10 \\times 3 - 8 \\\\ &= 30 - 8 (=22) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{144} \\div \\sqrt{9} + \\sqrt{48}$", choices: ["$4 + \\sqrt{48}$", "$4 + 4\\sqrt{3}$", "$\\sqrt{16} + 4\\sqrt{3}$", "$8\\sqrt{3}$"], answer: "$4 + 4\\sqrt{3}$", process: "\\begin{aligned} & \\sqrt{144} \\div \\sqrt{9} + \\sqrt{48} \\\\ &= \\sqrt{16} + 4\\sqrt{3} \\\\ &= 4 + 4\\sqrt{3} \\end{aligned}" },
+  { question: "$3\\sqrt{15} \\times \\sqrt{3} - \\sqrt{80}$", choices: ["$9\\sqrt{5} - 4\\sqrt{5}$", "$5\\sqrt{5}$", "$3\\sqrt{45} - 4\\sqrt{5}$", "$13\\sqrt{5}$"], answer: "$5\\sqrt{5}$", process: "\\begin{aligned} & 3\\sqrt{15} \\times \\sqrt{3} - \\sqrt{80} \\\\ &= 3\\sqrt{45} - 4\\sqrt{5} \\\\ &= 3(3\\sqrt{5}) - 4\\sqrt{5} \\\\ &= 9\\sqrt{5} - 4\\sqrt{5} \\\\ &= 5\\sqrt{5} \\end{aligned}" },
+  // --- 【3番目が正解の問題】 (25問) ---
+  { question: "$5\\sqrt{6} \\times \\sqrt{3} - \\sqrt{50}$", choices: ["$15\\sqrt{2} - 5\\sqrt{2}$", "$5\\sqrt{18} - 5\\sqrt{2}$", "$10\\sqrt{2}$", "$20\\sqrt{2}$"], answer: "$10\\sqrt{2}$", process: "\\begin{aligned} & 5\\sqrt{6} \\times \\sqrt{3} - \\sqrt{50} \\\\ &= 5\\sqrt{18} - 5\\sqrt{2} \\\\ &= 5(3\\sqrt{2}) - 5\\sqrt{2} \\\\ &= 15\\sqrt{2} - 5\\sqrt{2} \\\\ &= 10\\sqrt{2} \\end{aligned}" },
+  { question: "$12\\sqrt{15} \\div 3\\sqrt{5} + \\sqrt{12}$", choices: ["$4\\sqrt{3} + \\sqrt{12}$", "$4\\sqrt{10} + 2\\sqrt{3}$", "$6\\sqrt{3}$", "$8\\sqrt{3}$"], answer: "$6\\sqrt{3}$", process: "\\begin{aligned} & 12\\sqrt{15} \\div 3\\sqrt{5} + \\sqrt{12} \\\\ &= (12/3)\\sqrt{15/5} + 2\\sqrt{3} \\\\ &= 4\\sqrt{3} + 2\\sqrt{3} \\\\ &= 6\\sqrt{3} \\end{aligned}" },
+  { question: "$6\\sqrt{2} \\times \\sqrt{2} - \\sqrt{81}$", choices: ["$3$", "$12 - 9$", "$6 \\times 2 - 9$", "$21$"], answer: "$12 - 9$", process: "\\begin{aligned} & 6\\sqrt{2} \\times \\sqrt{2} - \\sqrt{81} \\\\ &= 6 \\times 2 - 9 \\\\ &= 12 - 9 (=3) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{12} + 20\\sqrt{10} \\div 4\\sqrt{5}$", choices: ["$2\\sqrt{3} + 5$", "$2\\sqrt{3} + 5\\sqrt{2}$", "$7\\sqrt{5}$", "$2\\sqrt{3} + \\sqrt{50}$"], answer: "$2\\sqrt{3} + 5\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{12} + 20\\sqrt{10} \\div 4\\sqrt{5} \\\\ &= 2\\sqrt{3} + (20/4)\\sqrt{10/5} \\\\ &= 2\\sqrt{3} + 5\\sqrt{2} \\end{aligned}" },
+  { question: "$3\\sqrt{14} \\times \\sqrt{2} - \\sqrt{63}$", choices: ["$6\\sqrt{7} - 3\\sqrt{7}$", "$3\\sqrt{28} - 3\\sqrt{7}$", "$3\\sqrt{7}$", "$9\\sqrt{7}$"], answer: "$3\\sqrt{7}$", process: "\\begin{aligned} & 3\\sqrt{14} \\times \\sqrt{2} - \\sqrt{63} \\\\ &= 3\\sqrt{28} - 3\\sqrt{7} \\\\ &= 3(2\\sqrt{7}) - 3\\sqrt{7} \\\\ &= 6\\sqrt{7} - 3\\sqrt{7} \\\\ &= 3\\sqrt{7} \\end{aligned}" },
+  { question: "$\\sqrt{108} \\div 2\\sqrt{3} + 5\\sqrt{1}$", choices: ["$3 + 5$", "$6\\sqrt{3} \\div 2\\sqrt{3} + 5$", "$8$", "$3+5\\sqrt{1}$"], answer: "$8$", process: "\\begin{aligned} & \\sqrt{108} \\div 2\\sqrt{3} + 5\\sqrt{1} \\\\ &= (6\\sqrt{3}) \\div (2\\sqrt{3}) + 5(1) \\\\ &= (6/2)\\sqrt{3/3} + 5 \\\\ &= 3\\sqrt{1} + 5 \\\\ &= 3 + 5 \\\\ &= 8 \\end{aligned}" },
+  { question: "$4\\sqrt{6} \\times 2\\sqrt{6} - \\sqrt{100}$", choices: ["$38$", "$8 \\times 6 - 10$", "$48 - 10$", "$58$"], answer: "$48 - 10$", process: "\\begin{aligned} & 4\\sqrt{6} \\times 2\\sqrt{6} - \\sqrt{100} \\\\ &= 8 \\times 6 - 10 \\\\ &= 48 - 10 (=38) \\end{aligned}" }, // Keep unsimplified
+  { question: "$3\\sqrt{48} + 12\\sqrt{2} \\div 4\\sqrt{6}$", choices: ["$12\\sqrt{3} + 3\\sqrt{1/3}$", "$12\\sqrt{3} + \\sqrt{3}$", "$13\\sqrt{3}$", "$15\\sqrt{3}$"], answer: "$13\\sqrt{3}$", process: "\\begin{aligned} & 3\\sqrt{48} + 12\\sqrt{2} \\div 4\\sqrt{6} \\\\ &= 3(4\\sqrt{3}) + (12/4)\\sqrt{2/6} \\\\ &= 12\\sqrt{3} + 3\\sqrt{1/3} \\\\ &= 12\\sqrt{3} + 3 \\frac{1}{\\sqrt{3}} \\\\ &= 12\\sqrt{3} + \\frac{3\\sqrt{3}}{3} \\\\ &= 12\\sqrt{3} + \\sqrt{3} \\\\ &= 13\\sqrt{3} \\end{aligned}" },
+  { question: "$2\\sqrt{15} \\times \\sqrt{5} - \\sqrt{75}$", choices: ["$10\\sqrt{3} - 5\\sqrt{3}$", "$2\\sqrt{75} - 5\\sqrt{3}$", "$5\\sqrt{3}$", "$15\\sqrt{3}$"], answer: "$5\\sqrt{3}$", process: "\\begin{aligned} & 2\\sqrt{15} \\times \\sqrt{5} - \\sqrt{75} \\\\ &= 2\\sqrt{75} - 5\\sqrt{3} \\\\ &= 2(5\\sqrt{3}) - 5\\sqrt{3} \\\\ &= 10\\sqrt{3} - 5\\sqrt{3} \\\\ &= 5\\sqrt{3} \\end{aligned}" },
+  { question: "$\\sqrt{50} \\div \\sqrt{5} + \\sqrt{40}$", choices: ["$\\sqrt{10} + 4\\sqrt{10}$", "$\\sqrt{10} + 2\\sqrt{10}$", "$3\\sqrt{10}$", "$5\\sqrt{10}$"], answer: "$3\\sqrt{10}$", process: "\\begin{aligned} & \\sqrt{50} \\div \\sqrt{5} + \\sqrt{40} \\\\ &= \\sqrt{10} + 2\\sqrt{10} \\\\ &= 3\\sqrt{10} \\end{aligned}" },
+  { question: "$7\\sqrt{3} \\times \\sqrt{3} - \\sqrt{121}$", choices: ["$10$", "$21 - 11$", "$7 \\times 3 - 11$", "$32$"], answer: "$21 - 11$", process: "\\begin{aligned} & 7\\sqrt{3} \\times \\sqrt{3} - \\sqrt{121} \\\\ &= 7 \\times 3 - 11 \\\\ &= 21 - 11 (=10) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{54} - 10\\sqrt{15} \\div 5\\sqrt{5}$", choices: ["$3\\sqrt{6} - 2\\sqrt{3}$", "$3\\sqrt{6} - \\sqrt{12}$", "$3\\sqrt{6} - 2\\sqrt{3}$", "$\\sqrt{3}$"], answer: "$3\\sqrt{6} - 2\\sqrt{3}$", process: "\\begin{aligned} & \\sqrt{54} - 10\\sqrt{15} \\div 5\\sqrt{5} \\\\ &= 3\\sqrt{6} - (10/5)\\sqrt{15/5} \\\\ &= 3\\sqrt{6} - 2\\sqrt{3} \\end{aligned}" },
+  { question: "$4\\sqrt{2} \\times \\sqrt{8} - \\sqrt{1}$", choices: ["$15$", "$4\\sqrt{16} - 1$", "$16 - 1$", "$17$"], answer: "$16 - 1$", process: "\\begin{aligned} & 4\\sqrt{2} \\times \\sqrt{8} - \\sqrt{1} \\\\ &= 4\\sqrt{16} - 1 \\\\ &= 4(4) - 1 \\\\ &= 16 - 1 (=15) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{75} \\div \\sqrt{3} + \\sqrt{64}$", choices: ["$5 + \\sqrt{64}$", "$5 + 8$", "$13$", "$\\sqrt{25} + 8$"], answer: "$13$", process: "\\begin{aligned} & \\sqrt{75} \\div \\sqrt{3} + \\sqrt{64} \\\\ &= \\sqrt{25} + 8 \\\\ &= 5 + 8 \\\\ &= 13 \\end{aligned}" },
+  { question: "$2\\sqrt{21} \\times \\sqrt{3} - \\sqrt{28}$", choices: ["$6\\sqrt{7} - 2\\sqrt{7}$", "$2\\sqrt{63} - 2\\sqrt{7}$", "$4\\sqrt{7}$", "$8\\sqrt{7}$"], answer: "$4\\sqrt{7}$", process: "\\begin{aligned} & 2\\sqrt{21} \\times \\sqrt{3} - \\sqrt{28} \\\\ &= 2\\sqrt{63} - 2\\sqrt{7} \\\\ &= 2(3\\sqrt{7}) - 2\\sqrt{7} \\\\ &= 6\\sqrt{7} - 2\\sqrt{7} \\\\ &= 4\\sqrt{7} \\end{aligned}" },
+  { question: "$18\\sqrt{10} \\div 6\\sqrt{5} - \\sqrt{8}$", choices: ["$3\\sqrt{2} - \\sqrt{8}$", "$3\\sqrt{5} - 2\\sqrt{2}$", "$\\sqrt{2}$", "$5\\sqrt{2}$"], answer: "$\\sqrt{2}$", process: "\\begin{aligned} & 18\\sqrt{10} \\div 6\\sqrt{5} - \\sqrt{8} \\\\ &= (18/6)\\sqrt{10/5} - 2\\sqrt{2} \\\\ &= 3\\sqrt{2} - 2\\sqrt{2} \\\\ &= \\sqrt{2} \\end{aligned}" },
+  { question: "$3\\sqrt{5} \\times 4\\sqrt{5} - \\sqrt{144}$", choices: ["$48$", "$12 \\times 5 - 12$", "$60 - 12$", "$72$"], answer: "$60 - 12$", process: "\\begin{aligned} & 3\\sqrt{5} \\times 4\\sqrt{5} - \\sqrt{144} \\\\ &= 12 \\times 5 - 12 \\\\ &= 60 - 12 (=48) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{128} \\div \\sqrt{2} + \\sqrt{9}$", choices: ["$8 + \\sqrt{9}$", "$8 + 3$", "$11$", "$\\sqrt{64} + 3$"], answer: "$11$", process: "\\begin{aligned} & \\sqrt{128} \\div \\sqrt{2} + \\sqrt{9} \\\\ &= \\sqrt{64} + 3 \\\\ &= 8 + 3 \\\\ &= 11 \\end{aligned}" },
+  { question: "$5\\sqrt{6} \\times \\sqrt{2} - 2\\sqrt{27}$", choices: ["$10\\sqrt{3} - 6\\sqrt{3}$", "$5\\sqrt{12} - 6\\sqrt{3}$", "$4\\sqrt{3}$", "$16\\sqrt{3}$"], answer: "$4\\sqrt{3}$", process: "\\begin{aligned} & 5\\sqrt{6} \\times \\sqrt{2} - 2\\sqrt{27} \\\\ &= 5\\sqrt{12} - 2(3\\sqrt{3}) \\\\ &= 5(2\\sqrt{3}) - 6\\sqrt{3} \\\\ &= 10\\sqrt{3} - 6\\sqrt{3} \\\\ &= 4\\sqrt{3} \\end{aligned}" },
+  { question: "$\\sqrt{12} + 24\\sqrt{14} \\div 8\\sqrt{7}$", choices: ["$2\\sqrt{3} + 3\\sqrt{2}$", "$2\\sqrt{3} + \\sqrt{18}$", "$5\\sqrt{5}$", "$2\\sqrt{3} + 3\\sqrt{7}$"], answer: "$2\\sqrt{3} + 3\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{12} + 24\\sqrt{14} \\div 8\\sqrt{7} \\\\ &= 2\\sqrt{3} + (24/8)\\sqrt{14/7} \\\\ &= 2\\sqrt{3} + 3\\sqrt{2} \\end{aligned}" },
+  { question: "$2\\sqrt{10} \\times \\sqrt{10} - \\sqrt{4}$", choices: ["$18$", "$2 \\times 10 - 2$", "$20 - 2$", "$22$"], answer: "$20 - 2$", process: "\\begin{aligned} & 2\\sqrt{10} \\times \\sqrt{10} - \\sqrt{4} \\\\ &= 2 \\times 10 - 2 \\\\ &= 20 - 2 (=18) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{32} \\div \\sqrt{8} + \\sqrt{100}$", choices: ["$2 + \\sqrt{100}$", "$2 + 10$", "$12$", "$\\sqrt{4} + 10$"], answer: "$12$", process: "\\begin{aligned} & \\sqrt{32} \\div \\sqrt{8} + \\sqrt{100} \\\\ &= \\sqrt{4} + 10 \\\\ &= 2 + 10 \\\\ &= 12 \\end{aligned}" },
+  { question: "$3\\sqrt{2} \\times \\sqrt{14} - \\sqrt{63}$", choices: ["$6\\sqrt{7} - 3\\sqrt{7}$", "$3\\sqrt{28} - 3\\sqrt{7}$", "$3\\sqrt{7}$", "$9\\sqrt{7}$"], answer: "$3\\sqrt{7}$", process: "\\begin{aligned} & 3\\sqrt{2} \\times \\sqrt{14} - \\sqrt{63} \\\\ &= 3\\sqrt{28} - 3\\sqrt{7} \\\\ &= 3(2\\sqrt{7}) - 3\\sqrt{7} \\\\ &= 6\\sqrt{7} - 3\\sqrt{7} \\\\ &= 3\\sqrt{7} \\end{aligned}" },
+  { question: "$21\\sqrt{15} \\div 7\\sqrt{5} - \\sqrt{12}$", choices: ["$3\\sqrt{3} - \\sqrt{12}$", "$3\\sqrt{10} - 2\\sqrt{3}$", "$\\sqrt{3}$", "$5\\sqrt{3}$"], answer: "$\\sqrt{3}$", process: "\\begin{aligned} & 21\\sqrt{15} \\div 7\\sqrt{5} - \\sqrt{12} \\\\ &= (21/7)\\sqrt{15/5} - 2\\sqrt{3} \\\\ &= 3\\sqrt{3} - 2\\sqrt{3} \\\\ &= \\sqrt{3} \\end{aligned}" },
+  { question: "$4\\sqrt{3} \\times 5\\sqrt{3} - \\sqrt{169}$", choices: ["$47$", "$20 \\times 3 - 13$", "$60 - 13$", "$73$"], answer: "$60 - 13$", process: "\\begin{aligned} & 4\\sqrt{3} \\times 5\\sqrt{3} - \\sqrt{169} \\\\ &= 20 \\times 3 - 13 \\\\ &= 60 - 13 (=47) \\end{aligned}" }, // Keep unsimplified
+  // --- 【4番目が正解の問題】 (25問) ---
+  { question: "$6\\sqrt{5} \\times \\sqrt{10} - \\sqrt{8}$", choices: ["$30\\sqrt{2} - 2\\sqrt{2}$", "$6\\sqrt{50} - 2\\sqrt{2}$", "$26\\sqrt{2}$", "$28\\sqrt{2}$"], answer: "$28\\sqrt{2}$", process: "\\begin{aligned} & 6\\sqrt{5} \\times \\sqrt{10} - \\sqrt{8} \\\\ &= 6\\sqrt{50} - 2\\sqrt{2} \\\\ &= 6(5\\sqrt{2}) - 2\\sqrt{2} \\\\ &= 30\\sqrt{2} - 2\\sqrt{2} \\\\ &= 28\\sqrt{2} \\end{aligned}" },
+  { question: "$8\\sqrt{21} \\div 2\\sqrt{7} + \\sqrt{12}$", choices: ["$4\\sqrt{3} + \\sqrt{12}$", "$4\\sqrt{14} + 2\\sqrt{3}$", "$8\\sqrt{3}$", "$6\\sqrt{3}$"], answer: "$6\\sqrt{3}$", process: "\\begin{aligned} & 8\\sqrt{21} \\div 2\\sqrt{7} + \\sqrt{12} \\\\ &= (8/2)\\sqrt{21/7} + 2\\sqrt{3} \\\\ &= 4\\sqrt{3} + 2\\sqrt{3} \\\\ &= 6\\sqrt{3} \\end{aligned}" },
+  { question: "$9\\sqrt{2} \\times \\sqrt{2} - \\sqrt{196}$", choices: ["$4$", "$18 - 14$", "$9 \\times 2 - 14$", "$32$"], answer: "$18 - 14$", process: "\\begin{aligned} & 9\\sqrt{2} \\times \\sqrt{2} - \\sqrt{196} \\\\ &= 9 \\times 2 - 14 \\\\ &= 18 - 14 (=4) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{18} + 16\\sqrt{10} \\div 8\\sqrt{5}$", choices: ["$3\\sqrt{2} + 2$", "$3\\sqrt{2} + \\sqrt{8}$", "$7\\sqrt{2}$", "$3\\sqrt{2} + 2\\sqrt{2}$"], answer: "$3\\sqrt{2} + 2\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{18} + 16\\sqrt{10} \\div 8\\sqrt{5} \\\\ &= 3\\sqrt{2} + (16/8)\\sqrt{10/5} \\\\ &= 3\\sqrt{2} + 2\\sqrt{2} (=5\\sqrt{2}) \\end{aligned}" }, // Keep unsimplified
+  { question: "$2\\sqrt{6} \\times \\sqrt{15} - \\sqrt{40}$", choices: ["$6\\sqrt{10} - 2\\sqrt{10}$", "$2\\sqrt{90} - 2\\sqrt{10}$", "$8\\sqrt{10}$", "$4\\sqrt{10}$"], answer: "$4\\sqrt{10}$", process: "\\begin{aligned} & 2\\sqrt{6} \\times \\sqrt{15} - \\sqrt{40} \\\\ &= 2\\sqrt{90} - 2\\sqrt{10} \\\\ &= 2(3\\sqrt{10}) - 2\\sqrt{10} \\\\ &= 6\\sqrt{10} - 2\\sqrt{10} \\\\ &= 4\\sqrt{10} \\end{aligned}" },
+  { question: "$\\sqrt{72} \\div \\sqrt{6} + \\sqrt{27}$", choices: ["$\\sqrt{12} + 3\\sqrt{3}$", "$5\\sqrt{3}$", "$2\\sqrt{3} + 3\\sqrt{3}$", "$6\\sqrt{3}$"], answer: "$5\\sqrt{3}$", process: "\\begin{aligned} & \\sqrt{72} \\div \\sqrt{6} + \\sqrt{27} \\\\ &= \\sqrt{12} + 3\\sqrt{3} \\\\ &= 2\\sqrt{3} + 3\\sqrt{3} \\\\ &= 5\\sqrt{3} \\end{aligned}" },
+  { question: "$5\\sqrt{7} \\times \\sqrt{7} - \\sqrt{1}$", choices: ["$34$", "$35 - 1$", "$5 \\times 7 - 1$", "$36$"], answer: "$35 - 1$", process: "\\begin{aligned} & 5\\sqrt{7} \\times \\sqrt{7} - \\sqrt{1} \\\\ &= 5 \\times 7 - 1 \\\\ &= 35 - 1 (=34) \\end{aligned}" }, // Keep unsimplified
+  { question: "$4\\sqrt{18} + 10\\sqrt{14} \\div 5\\sqrt{7}$", choices: ["$12\\sqrt{2} + 2\\sqrt{2}$", "$12\\sqrt{2} + \\sqrt{8}$", "$16\\sqrt{2}$", "$14\\sqrt{2}$"], answer: "$14\\sqrt{2}$", process: "\\begin{aligned} & 4\\sqrt{18} + 10\\sqrt{14} \\div 5\\sqrt{7} \\\\ &= 4(3\\sqrt{2}) + (10/5)\\sqrt{14/7} \\\\ &= 12\\sqrt{2} + 2\\sqrt{2} \\\\ &= 14\\sqrt{2} \\end{aligned}" },
+  { question: "$3\\sqrt{10} \\times \\sqrt{6} - \\sqrt{60}$", choices: ["$6\\sqrt{15} - 2\\sqrt{15}$", "$3\\sqrt{60} - 2\\sqrt{15}$", "$8\\sqrt{15}$", "$4\\sqrt{15}$"], answer: "$4\\sqrt{15}$", process: "\\begin{aligned} & 3\\sqrt{10} \\times \\sqrt{6} - \\sqrt{60} \\\\ &= 3\\sqrt{60} - 2\\sqrt{15} \\\\ &= 3(2\\sqrt{15}) - 2\\sqrt{15} \\\\ &= 6\\sqrt{15} - 2\\sqrt{15} \\\\ &= 4\\sqrt{15} \\end{aligned}" },
+  { question: "$\\sqrt{80} \\div \\sqrt{5} + \\sqrt{36}$", choices: ["$4 + \\sqrt{36}$", "$4 + 6$", "$\\sqrt{16} + 6$", "$10$"], answer: "$10$", process: "\\begin{aligned} & \\sqrt{80} \\div \\sqrt{5} + \\sqrt{36} \\\\ &= \\sqrt{16} + 6 \\\\ &= 4 + 6 \\\\ &= 10 \\end{aligned}" },
+  { question: "$8\\sqrt{3} \\times \\sqrt{3} - \\sqrt{25}$", choices: ["$19$", "$24 - 5$", "$8 \\times 3 - 5$", "$29$"], answer: "$24 - 5$", process: "\\begin{aligned} & 8\\sqrt{3} \\times \\sqrt{3} - \\sqrt{25} \\\\ &= 8 \\times 3 - 5 \\\\ &= 24 - 5 (=19) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{32} - 6\\sqrt{10} \\div 3\\sqrt{5}$", choices: ["$4\\sqrt{2} - 2\\sqrt{2}$", "$4\\sqrt{2} - \\sqrt{8}$", "$0$", "$2\\sqrt{2}$"], answer: "$2\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{32} - 6\\sqrt{10} \\div 3\\sqrt{5} \\\\ &= 4\\sqrt{2} - (6/3)\\sqrt{10/5} \\\\ &= 4\\sqrt{2} - 2\\sqrt{2} \\\\ &= 2\\sqrt{2} \\end{aligned}" },
+  { question: "$5\\sqrt{2} \\times \\sqrt{10} - \\sqrt{20}$", choices: ["$10\\sqrt{5} - 2\\sqrt{5}$", "$5\\sqrt{20} - 2\\sqrt{5}$", "$12\\sqrt{5}$", "$8\\sqrt{5}$"], answer: "$8\\sqrt{5}$", process: "\\begin{aligned} & 5\\sqrt{2} \\times \\sqrt{10} - \\sqrt{20} \\\\ &= 5\\sqrt{20} - 2\\sqrt{5} \\\\ &= 5(2\\sqrt{5}) - 2\\sqrt{5} \\\\ &= 10\\sqrt{5} - 2\\sqrt{5} \\\\ &= 8\\sqrt{5} \\end{aligned}" },
+  { question: "$14\\sqrt{6} \\div 7\\sqrt{3} + \\sqrt{50}$", choices: ["$2\\sqrt{2} + \\sqrt{50}$", "$2\\sqrt{3} + 5\\sqrt{2}$", "$7\\sqrt{2}$", "$7\\sqrt{2}$"], answer: "$7\\sqrt{2}$", process: "\\begin{aligned} & 14\\sqrt{6} \\div 7\\sqrt{3} + \\sqrt{50} \\\\ &= (14/7)\\sqrt{6/3} + 5\\sqrt{2} \\\\ &= 2\\sqrt{2} + 5\\sqrt{2} \\\\ &= 7\\sqrt{2} \\end{aligned}" }, // Corrected duplicate
+  { question: "$6\\sqrt{5} \\times 2\\sqrt{5} - \\sqrt{49}$", choices: ["$53$", "$12 \\times 5 - 7$", "$60 - 7$", "$67$"], answer: "$60 - 7$", process: "\\begin{aligned} & 6\\sqrt{5} \\times 2\\sqrt{5} - \\sqrt{49} \\\\ &= 12 \\times 5 - 7 \\\\ &= 60 - 7 (=53) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{162} \\div \\sqrt{9} + \\sqrt{8}$", choices: ["$3 + 2\\sqrt{2}$", "$9 + 2\\sqrt{2}$", "$\\sqrt{18} + 2\\sqrt{2}$", "$5\\sqrt{2}$"], answer: "$5\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{162} \\div \\sqrt{9} + \\sqrt{8} \\\\ &= \\sqrt{18} + 2\\sqrt{2} \\\\ &= 3\\sqrt{2} + 2\\sqrt{2} \\\\ &= 5\\sqrt{2} \\end{aligned}" },
+  { question: "$4\\sqrt{2} \\times \\sqrt{6} - \\sqrt{75}$", choices: ["$8\\sqrt{3} - 5\\sqrt{3}$", "$4\\sqrt{12} - 5\\sqrt{3}$", "$13\\sqrt{3}$", "$3\\sqrt{3}$"], answer: "$3\\sqrt{3}$", process: "\\begin{aligned} & 4\\sqrt{2} \\times \\sqrt{6} - \\sqrt{75} \\\\ &= 4\\sqrt{12} - 5\\sqrt{3} \\\\ &= 4(2\\sqrt{3}) - 5\\sqrt{3} \\\\ &= 8\\sqrt{3} - 5\\sqrt{3} \\\\ &= 3\\sqrt{3} \\end{aligned}" },
+  { question: "$10\\sqrt{21} \\div 5\\sqrt{3} - \\sqrt{28}$", choices: ["$2\\sqrt{7} - \\sqrt{28}$", "$2\\sqrt{18} - 2\\sqrt{7}$", "$4\\sqrt{7}$", "$0$"], answer: "$0$", process: "\\begin{aligned} & 10\\sqrt{21} \\div 5\\sqrt{3} - \\sqrt{28} \\\\ &= (10/5)\\sqrt{21/3} - 2\\sqrt{7} \\\\ &= 2\\sqrt{7} - 2\\sqrt{7} \\\\ &= 0 \\end{aligned}" },
+  { question: "$7\\sqrt{6} \\times \\sqrt{6} - \\sqrt{9}$", choices: ["$39$", "$7 \\times 6 - 3$", "$42 - 3$", "$45$"], answer: "$42 - 3$", process: "\\begin{aligned} & 7\\sqrt{6} \\times \\sqrt{6} - \\sqrt{9} \\\\ &= 7 \\times 6 - 3 \\\\ &= 42 - 3 (=39) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{45} - 8\\sqrt{6} \\div 4\\sqrt{3}$", choices: ["$3\\sqrt{5} - 2\\sqrt{2}$", "$3\\sqrt{5} - \\sqrt{8}$", "$\\sqrt{3}$", "$3\\sqrt{5} - 2\\sqrt{2}$"], answer: "$3\\sqrt{5} - 2\\sqrt{2}$", process: "\\begin{aligned} & \\sqrt{45} - 8\\sqrt{6} \\div 4\\sqrt{3} \\\\ &= 3\\sqrt{5} - (8/4)\\sqrt{6/3} \\\\ &= 3\\sqrt{5} - 2\\sqrt{2} \\end{aligned}" }, // Corrected duplicate
+  { question: "$2\\sqrt{3} \\times 6\\sqrt{3} - \\sqrt{100}$", choices: ["$26$", "$12 \\times 3 - 10$", "$36 - 10$", "$46$"], answer: "$36 - 10$", process: "\\begin{aligned} & 2\\sqrt{3} \\times 6\\sqrt{3} - \\sqrt{100} \\\\ &= 12 \\times 3 - 10 \\\\ &= 36 - 10 (=26) \\end{aligned}" }, // Keep unsimplified
+  { question: "$\\sqrt{50} \\div \\sqrt{2} + \\sqrt{144}$", choices: ["$5 + \\sqrt{144}$", "$5 + 12$", "$\\sqrt{25} + 12$", "$17$"], answer: "$17$", process: "\\begin{aligned} & \\sqrt{50} \\div \\sqrt{2} + \\sqrt{144} \\\\ &= \\sqrt{25} + 12 \\\\ &= 5 + 12 \\\\ &= 17 \\end{aligned}" },
+  { question: "$3\\sqrt{7} \\times \\sqrt{14} - \\sqrt{98}$", choices: ["$21\\sqrt{2} - 7\\sqrt{2}$", "$3\\sqrt{98} - 7\\sqrt{2}$", "$28\\sqrt{2}$", "$14\\sqrt{2}$"], answer: "$14\\sqrt{2}$", process: "\\begin{aligned} & 3\\sqrt{7} \\times \\sqrt{14} - \\sqrt{98} \\\\ &= 3\\sqrt{98} - 7\\sqrt{2} \\\\ &= 3(7\\sqrt{2}) - 7\\sqrt{2} \\\\ &= 21\\sqrt{2} - 7\\sqrt{2} \\\\ &= 14\\sqrt{2} \\end{aligned}" },
+  { question: "$9\\sqrt{30} \\div 3\\sqrt{6} - \\sqrt{20}$", choices: ["$3\\sqrt{5} - \\sqrt{20}$", "$3\\sqrt{24} - 2\\sqrt{5}$", "$2\\sqrt{5}$", "$\\sqrt{5}$"], answer: "$\\sqrt{5}$", process: "\\begin{aligned} & 9\\sqrt{30} \\div 3\\sqrt{6} - \\sqrt{20} \\\\ &= (9/3)\\sqrt{30/6} - 2\\sqrt{5} \\\\ &= 3\\sqrt{5} - 2\\sqrt{5} \\\\ &= \\sqrt{5} \\end{aligned}" },
+  { question: "$10\\sqrt{2} \\times \\sqrt{2} - \\sqrt{121}$", choices: ["$9$", "$10 \\times 2 - 11$", "$20 - 11$", "$31$"], answer: "$20 - 11$", process: "\\begin{aligned} & 10\\sqrt{2} \\times \\sqrt{2} - \\sqrt{121} \\\\ &= 10 \\times 2 - 11 \\\\ &= 20 - 11 (=9) \\end{aligned}" } // Keep unsimplified
+];
+      // ===== グローバル変数定義 =====
+        const modeSelectionScreen = document.getElementById('mode-selection');
+        const quizMainScreen = document.getElementById('quiz-main');
+        const musouBackground = document.getElementById('musou-background');
+
+        const questionArea = document.getElementById('question-area');
+        const nextButton = document.getElementById('next-btn');
+        const resultsArea = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
+        const timerBar = document.getElementById('timer-bar');
+        const timerText = document.getElementById('timer-text');
+        
+        let selectedQuizData;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        let timerInterval;
+        let timeLeft;
+        let TIME_LIMIT;
+        let WARNING_TIME;
+        
+        let totalSolveTime = 0;
+        let questionStartTime;
+
+        // ===== モード選択とクイズ開始の処理 =====
+        document.getElementById('normal-mode-btn').addEventListener('click', () => {
+            startGame({
+                timeLimit: 15,
+                warningTime: 5,
+                isMusou: false
+            });
+        });
+
+        document.getElementById('musou-mode-btn').addEventListener('click', () => {
+            startGame({
+                timeLimit: 5,
+                warningTime: 3,
+                isMusou: true
+            });
+        });
+
+        function startGame(settings) {
+            TIME_LIMIT = settings.timeLimit;
+            WARNING_TIME = settings.warningTime;
+
+            if (settings.isMusou) {
+                musouBackground.classList.remove('hidden');
+            }
+
+            // 問題をシャッフルして10問選ぶ
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            const shuffledData = shuffleArray(fullQuizDataBank);
+            selectedQuizData = shuffledData.slice(0, 10);
+
+            // 画面切り替え
+            modeSelectionScreen.classList.add('hidden');
+            quizMainScreen.classList.remove('hidden');
+
+            // クイズ開始
+            showQuestion();
+        }
+
+
+        // ===== タイマー関数 =====
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('warning');
+            document.body.classList.remove('timer-warning');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+
+                if (timeLeft <= WARNING_TIME) {
+                    timerBar.classList.add('warning');
+                    document.body.classList.add('timer-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+       function timeUp() {
+            stopTimer();
+            totalSolveTime += TIME_LIMIT;
+
+            const choicesContainer = questionArea.querySelector('.choices');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // ★ $ 除去
+
+            if(choicesContainer) {
+                choicesContainer.classList.add('answered');
+            }
+
+            feedbackMessage.textContent = "時間切れ💦";
+            feedbackMessage.classList.add('incorrect-feedback');
+            feedbackMessage.classList.remove('hidden');
+
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            processDisplay.classList.remove('hidden');
+
+            Array.from(choicesContainer.children).forEach(child => {
+                // ★★★ child.textContent から $ を除去して比較 ★★★
+                const choiceText = child.textContent.replace(/\$/g, ''); 
+                if (choiceText === correctAnswer) {
+                     child.classList.add('correct');
+                }
+            });
+
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+// ===== クイズ本体の関数 =====
+        function showQuestion() {
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            
+            const choicesHtml = currentQuestion.choices.map(choice => {
+                const onclickChoice = choice.replace(/\$/g, ''); 
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+            }).join('');
+
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+            
+            // ★★★ 問題文のテキストから $ を除去してKaTeXでレンダリング ★★★
+            const problemTextElement = document.getElementById('problem-text');
+            // question 文字列から $ を除去 (例: "$2(x+y)+...$" -> "2(x+y)+...")
+            const questionKatexString = currentQuestion.question.slice(1, -1); 
+            try {
+                // $ を除去した文字列をレンダリング
+                katex.render(questionKatexString, problemTextElement, { 
+                    throwOnError: true, // エラーを強制的に表示
+                    displayMode: true // 問題文は独立した行で表示
+                });
+            } catch (e) {
+                 console.error("KaTeX render error on question:", currentQuestion.question, e);
+                 // エラー時は元のテキスト（$付き）を表示
+                 problemTextElement.textContent = currentQuestion.question;
+            }
+
+
+            // 各選択肢のテキストから $ を除去してKaTeXでレンダリング
+            const choiceElements = questionArea.querySelectorAll('.choice');
+            choiceElements.forEach(element => {
+                const katexString = element.textContent.slice(1, -1); 
+                try {
+                    katex.render(katexString, element, { 
+                        throwOnError: true, 
+                        displayMode: false 
+                    }); 
+                } catch (e) {
+                    console.error("KaTeX render error on choice:", element.textContent, e); 
+                    element.innerHTML = element.textContent; 
+                }
+            });
+            
+            questionStartTime = Date.now();
+            startTimer();
+        }        
+        function selectAnswer(element, selectedChoice) {
+            stopTimer();
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            totalSolveTime += timeTaken;
+
+            const choicesContainer = element.parentElement;
+            if (choicesContainer.classList.contains('answered')) return;
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); 
+
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) { 
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                 // 正解の選択肢をハイライト
+                Array.from(choicesContainer.children).forEach(child => {
+                    // ★★★ child.textContent から $ を除去して比較 ★★★
+                    const choiceText = child.textContent.replace(/\$/g, ''); 
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning');
+            if (currentQuestionIndex < selectedQuizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden');
+            
+            const finalScore = score * 10;
+            const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime);
+
+            let rank = '';
+            let rankColor = '';
+
+            if (totalSeconds <= 30) {
+                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
+            } else if (totalSeconds <= 45) {
+                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
+            } else if (totalSeconds <= 60) {
+                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+            } else {
+                rank = '💪 Cランク 💪'; rankColor = '#28a745';
+            }
+
+            resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank;
+            rankInfoDisplay.style.color = rankColor;
+        }
+    </script>
+
+</body>
+</html>
+
