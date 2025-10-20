@@ -1,3 +1,16 @@
+ご指摘ありがとうございます！ 大変申し訳ありません。test1.html のデータバンクは、問題文にも $ が含まれていないのですね。
+
+私が「文字式」のテスト（test3.html など）用のロジックと混同していました。 test1.html のような「計算問題」では、問題文も選択肢も $ が（基本的には）データバンクに含まれていません。
+
+$ がない文字列（例: "10 - 2 \\times 3"）に対して slice(1, -1) を実行すると、先頭と末尾の文字が切り取られてしまい（例: "0 - 2 \\times "）、数式が切れて表示されていたのだと思います。
+
+$ を削除する処理が不要な、正しい test1.html 用の全体コードを以下に示します。
+
+test1.html 全体コード (データバンク除く・修正版)
+このコードでは、showQuestion 関数内の katex.render() に文字列を渡す際に、slice(1, -1) を行わないように修正しています。
+
+HTML
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -175,7 +188,7 @@
         <div class="mode-buttons">
             <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
             <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
-            </div>
+        </div>
         <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
     </div>
 
@@ -335,7 +348,7 @@ const fullQuizDataBank = [
         let selectedQuizData;
         let currentQuestionIndex = 0;
         let score = 0;
-        let currentMode = 'normal'; // 現在のモードを保存
+        let currentMode = 'normal';
         
         let timerInterval;
         let timeLeft;
@@ -345,12 +358,13 @@ const fullQuizDataBank = [
         let totalSolveTime = 0;
         let questionStartTime;
 
-        let currentRankSettings = {}; // ランク判定基準を保存
+        let currentRankSettings = {};
 
         // ===== モード選択とクイズ開始の処理 =====
         document.getElementById('normal-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'normal',
+                // ★ 3. モード別設定 (test1.html 用) ★
                 timeLimit: 15,     // ノーマル 制限時間15秒
                 warningTime: 5,      // ノーマル 警告は残り5秒
                 isMusou: false,
@@ -363,6 +377,7 @@ const fullQuizDataBank = [
         document.getElementById('musou-mode-btn').addEventListener('click', () => {
             startGame({
                 mode: 'musou',
+                // ★ 3. モード別設定 (test1.html 用) ★
                 timeLimit: 5,      // 無双 制限時間5秒
                 warningTime: 3,      // 無双 警告は残り3秒
                 isMusou: true,
@@ -441,7 +456,8 @@ const fullQuizDataBank = [
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer; // ★ $ 除去処理は不要 ★
+            // ★ $除去不要 (DBのanswerが "4" のような数字のため)
+            const correctAnswer = currentQuestion.answer; 
 
             if(choicesContainer) {
                 choicesContainer.classList.add('answered');
@@ -455,7 +471,8 @@ const fullQuizDataBank = [
             processDisplay.classList.remove('hidden');
 
             Array.from(choicesContainer.children).forEach(child => {
-                const choiceText = child.textContent; // ★ $ 除去処理は不要 ★
+                // ★ $除去不要
+                const choiceText = child.textContent; 
                 if (choiceText === correctAnswer) {
                      child.classList.add('correct');
                 }
@@ -469,13 +486,12 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
-        // ===== クイズ本体の関数 (★修正版★) =====
+        // ===== クイズ本体の関数 (★ テンプレートB用 ★) =====
         function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
             
-            // ★ $ 除去処理は不要 ★
+            // ★ 選択肢 (数字) は $ 除去不要 ★
             const choicesHtml = currentQuestion.choices.map(choice => {
-                // const onclickChoice = choice.replace(/\$/g, ''); // 不要
                 return `<div class="choice" onclick="selectAnswer(this, '${choice}')">${choice}</div>`;
             }).join('');
 
@@ -490,10 +506,11 @@ const fullQuizDataBank = [
                 </div>
             `;
             
-            // ★ 問題文の $ 除去処理は不要 ★
+            // ★ 問題文は $ 除去不要 (DBに $ がないため) ★
             const problemTextElement = document.getElementById('problem-text');
+            const questionKatexString = currentQuestion.question; // .slice(1, -1) を削除
             try {
-                katex.render(currentQuestion.question, problemTextElement, { // .slice(1, -1) を削除
+                katex.render(questionKatexString, problemTextElement, { 
                     throwOnError: true,
                     displayMode: true
                 });
@@ -502,10 +519,10 @@ const fullQuizDataBank = [
                  problemTextElement.textContent = currentQuestion.question;
             }
 
-            // ★ 選択肢の $ 除去処理は不要 ★
+            // ★ 選択肢 (数字) は $ 除去不要 ★
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                let katexString = element.textContent; // .slice(1, -1) を削除
+                let katexString = element.textContent; // $ 除去しない
                 
                 try {
                     katex.render(katexString, element, { 
@@ -532,7 +549,8 @@ const fullQuizDataBank = [
             choicesContainer.classList.add('answered');
 
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer; // ★ $ 除去処理は不要 ★
+            // ★ $除去不要 (DBのanswerが "4" のような数字のため)
+            const correctAnswer = currentQuestion.answer; 
 
             const feedbackMessage = document.getElementById('feedback-message');
             const processDisplay = document.getElementById('calculation-process');
@@ -552,7 +570,8 @@ const fullQuizDataBank = [
 
                  // 正解の選択肢をハイライト
                 Array.from(choicesContainer.children).forEach(child => {
-                    const choiceText = child.textContent; // ★ $ 除去処理は不要 ★
+                    // ★ $除去不要
+                    const choiceText = child.textContent; 
                     if (choiceText === correctAnswer) {
                          child.classList.add('correct');
                     }
@@ -607,8 +626,15 @@ const fullQuizDataBank = [
                 rankName = 'C';
             }
             
-            // 達成状況（スター/クラウン）の保存処理
-            const thisTestId = "test1"; // ★ test1.html なので "test1" ★
+            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
+            
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
+            const thisTestId = "test1"; 
+            // ★ (例: test2.html なら "test2", test8.html なら "test8") ★
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+            // ★ 5. 履歴キー（ファイルごとに変える） ★
             const historyKey = 'calcHistory'; // ★「正負の数」用のキー
             
             if (finalScore === totalPoints && (rankName === 'S' || rankName === 'A')) {
