@@ -179,29 +179,28 @@
             const achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
             const listElement = document.getElementById('achievement-list');
             
-            if (testIds.length === 0) {
+            if (testList.length === 0) { // ★ 変数名を変更
                  listElement.innerHTML = "<p>対象のテストがありません。</p>";
                  return;
             }
 
-            testIds.forEach(id => {
-                const status = achievements[id]; // "musou", "normal", または undefined
+            testList.forEach(test => { // ★ 変数名を変更
+                const status = achievements[test.id]; // ★ test.id でデータを参照
                 let icon = '➖';
                 let iconClass = 'none';
                 
                 if (status === 'musou') {
-                    icon = '👑'; // 無双モード (王冠)
+                    icon = '👑';
                     iconClass = 'musou';
                 } else if (status === 'normal') {
-                    icon = '⭐'; // ノーマル (スター)
+                    icon = '⭐';
                     iconClass = 'normal';
                 }
                 
                 const item = document.createElement('li');
                 item.className = 'achievement-item';
                 item.innerHTML = `
-                    <div class="test-id">${id}</div>
-                    <div class="status-icon ${iconClass}">${icon}</div>
+                    <div class="test-id">${test.title}</div> <div class="status-icon ${iconClass}">${icon}</div>
                 `;
                 listElement.appendChild(item);
             });
