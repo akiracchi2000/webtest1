@@ -9,20 +9,25 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* 上寄せに変更 */
             min-height: 100vh;
             margin: 0;
+            padding-top: 3em; /* 上に余白を追加 */
             background-color: #f4f7f6;
         }
 
         .container {
             width: 90%;
-            max-width: 500px;
+            max-width: 600px; /* 少し幅を広げる */
             text-align: center;
+        }
+
+        .main-card {
             background: #fff;
-            padding: 3em;
+            padding: 2em;
             border-radius: 12px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2em;
         }
 
         h1 {
@@ -33,103 +38,214 @@
             padding-bottom: 10px;
         }
 
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        nav li {
-            margin-bottom: 1em;
-        }
+        nav ul { list-style-type: none; padding: 0; margin: 0; }
+        nav li { margin-bottom: 1em; }
 
         nav a {
-        display: block;
-        padding: 20px;
-        font-size: 1.2em;
-        text-decoration: none;
-        color: #fff;
-        /* background-color: #3498db; ← デフォルトの色指定は削除またはコメントアウト */
-        border-radius: 8px;
-        font-weight: bold;
-        transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-    }
-
-    /* ★ 難易度ごとの色指定を追加 ★ */
-    .level-beginner {
-        background-color: #3498db; /* 青 */
-    }
-    .level-beginner:hover {
-        background-color: #2980b9; /* 濃い青 */
-    }
-
-    .level-intermediate {
-        background-color: #8e44ad; /* 紫 */
-    }
-    .level-intermediate:hover {
-        background-color: #732d91; /* 濃い紫 */
-    }
-
-    .level-advanced {
-        background-color: #c0392b; /* 赤 */
-    }
-    .level-advanced:hover {
-        background-color: #a93226; /* 濃い赤 */
-    }
-
-    /* ... (既存の nav a:hover スタイル - transform と box-shadow だけ残すか、各レベルの:hoverに含める) ... */
-    nav a:hover {
-       transform: translateY(-3px);
-       box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-       /* background-color は各レベルで指定するので削除 */
-    }
+            display: block;
+            padding: 20px;
+            font-size: 1.2em;
+            text-decoration: none;
+            color: #fff;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            position: relative; /* スターを配置するために追加 */
+        }
         
-    nav li {
-        margin-bottom: 1em; /* 各ボタンの下の間隔 */
-    }
+        /* ★ 難易度ごとの色指定 ★ */
+        .level-beginner {
+            background-color: #3498db; /* 青 */
+        }
+        .level-beginner:hover {
+            background-color: #2980b9; /* 濃い青 */
+        }
+        .level-intermediate {
+            background-color: #8e44ad; /* 紫 */
+        }
+        .level-intermediate:hover {
+            background-color: #732d91; /* 濃い紫 */
+        }
+        .level-advanced {
+            background-color: #c0392b; /* 赤 */
+        }
+        .level-advanced:hover {
+            background-color: #a93226; /* 濃い赤 */
+        }
+        
+        nav a:hover {
+           transform: translateY(-3px);
+           box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        
+        /* ★ カテゴリー間のスペース ★ */
+        .category-separator {
+            margin-top: 2.5em; 
+        }
+        
+        /* ★ 達成スターのスタイルを追加 ★ */
+        .achievement-star {
+            position: absolute;
+            top: 50%;
+            right: 20px; 
+            transform: translateY(-50%); /* 上下中央揃え */
+            font-size: 1.5em; 
+            color: #ffc107; 
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+            pointer-events: none; /* スター自体はクリックできないようにする */
+        }
+        
+        /* ===== 履歴表示エリアのスタイル ===== */
+        #history-card {
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #history-list {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+            max-height: 400px; /* 高さを制限してスクロール可能に */
+            overflow-y: auto;
+        }
+        #history-list li {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 5px solid #6c757d;
+        }
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .history-item-details {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        #clear-history-btn {
+            margin-top: 1em;
+            padding: 8px 16px;
+            font-size: 0.9em;
+            color: #fff;
+            background-color: #dc3545;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .hidden { display: none; } /* 非表示用クラス */
 
-    /* ★ カテゴリー間のスペースを追加 ★ */
-    .category-separator {
-        margin-top: 2.5em; /* 上のボタンとの間隔を通常より広くする */
-    }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>学習テスト選択</h1>
-        <nav>
-            <ul>
-                <li>
-                    <a href="./test1.html" class="level-beginner">正負の数計算タイムアタック（初級）</a>
-                </li>
-                <li>
-                    <a href="./test2.html" class="level-advanced">正負の数計算タイムアタック（上級）</a>
-                </li>
-                <li>
-                <li class="category-separator">
-                    <a href="./test3.html" class="level-beginner">1次式の文字式の整理タイムアタック（初級）</a>
-                </li>
-                <li>
-                    <a href="./test4.html" class="level-intermediate">1次式の文字式の整理タイムアタック（中級）</a>
-                </li>
-                <li>
-                    <a href="./test5.html" class="level-advanced">1次式の文字式の整理タイムアタック（上級）</a>
-                </li>
-                <li>
-                <li class="category-separator">
-                    <a href="./test6.html" class="level-beginner">平方根の計算タイムアタック（初級）</a>
-                </li>
-                <li>
-                    <a href="./test7.html" class="level-intermediate">平方根の計算タイムアタック（中級）</a>
-                </li>
-                <li>
-                    <a href="./test8.html" class="level-advanced">平方根の計算タイムアタック２（上級）</a>
-                </li>
+        <div class="main-card">
+            <h1>学習テスト選択</h1>
+            
+            <nav>
+                <ul>
+                    <li>
+                        <a href="./test1.html" class="level-beginner" id="test1-link">正負の数計算タイムアタック（初級）</a>
+                    </li>
+                    <li>
+                        <a href="./test2.html" class="level-advanced" id="test2-link">正負の数計算タイムアタック（上級）</a>
+                    </li>
+                    <li class="category-separator">
+                        <a href="./test3.html" class="level-beginner" id="test3-link">1次式の文字式の整理タイムアタック（初級）</a>
+                    </li>
+                    <li>
+                        <a href="./test4.html" class="level-intermediate" id="test4-link">1次式の文字式の整理タイムアタック（中級）</a>
+                    </li>
+                    <li>
+                        <a href="./test5.html" class="level-advanced" id="test5-link">1次式の文字式の整理タイムアタック（上級）</a>
+                    </li>
+                    <li class="category-separator">
+                        <a href="./test6.html" class="level-beginner" id="test6-link">平方根の計算タイムアタック（初級）</a>
+                    </li>
+                    <li>
+                        <a href="./test7.html" class="level-intermediate" id="test7-link">平方根の計算タイムアタック（中級）</a>
+                    </li>
+                    <li>
+                        <a href="./test8.html" class="level-advanced" id="test8-link">平方根の計算タイムアタック（上級）</a>
+                    </li>
+                </ul>
+            </nav>
+            </div>
 
-            </ul>
-        </nav>
+        <div class="main-card" id="history-card">
+            <h2>プレイ履歴 (Test 1 & 2)</h2>
+            <ul id="history-list">
+                </ul>
+            <button id="clear-history-btn" class="hidden">履歴を削除</button>
+        </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const historyList = document.getElementById('history-list');
+            const clearButton = document.getElementById('clear-history-btn');
+            
+            // ★ 'quizHistory' キーの履歴を表示します ★
+            // (test1.html, test2.html でこのキーが使われている想定)
+            const historyKey = 'quizHistory'; 
+
+            // 1. ローカルストレージから履歴を読み込む
+            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+
+            if (history.length > 0) {
+                clearButton.classList.remove('hidden'); 
+                history.forEach(result => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="history-item-header">
+                            <span>${result.score}点 / ${result.totalPoints}点</span>
+                            <span>${result.rank} ランク</span>
+                        </div>
+                        <div class="history-item-details">
+                            解答時間: ${result.time}秒 | ${result.date}
+                        </div>
+                    `;
+                    historyList.appendChild(li);
+                });
+            } else {
+                historyList.innerHTML = '<li>まだプレイ履歴がありません。</li>';
+            }
+
+            // 履歴削除ボタンの処理
+            clearButton.addEventListener('click', function() {
+                if (confirm('本当にこの履歴をすべて削除しますか？')) {
+                    localStorage.removeItem(historyKey); 
+                    location.reload(); 
+                }
+            });
+            
+            // ★★★★★★★ 達成状況（スター）の表示処理 ★★★★★★★
+            
+            // 1. 保存された達成状況を読み込む
+            const achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+    
+            // 2. 各テストの達成状況をチェックしてスターを追加
+            // ★★★ test1 から test8 までをチェックするように更新 ★★★
+            const testsToCheck = ['test1', 'test2', 'test3', 'test4', 'test5', 'test6', 'test7', 'test8']; 
+
+            testsToCheck.forEach(testId => {
+                if (achievements[testId]) { 
+                    const link = document.getElementById(testId + '-link'); 
+                    if (link) {
+                        if (!link.querySelector('.achievement-star')) {
+                            link.innerHTML += '<span class="achievement-star">⭐</span>';
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
