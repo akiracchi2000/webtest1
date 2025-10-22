@@ -961,7 +961,7 @@ const fullQuizDataBank = [
         }
 
         // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
-function showQuestion() {
+        function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
 
             // 選択肢のHTMLを生成（onclick属性には $ を除去したものを渡す）
@@ -984,7 +984,14 @@ function showQuestion() {
 
             // ★ 問題文の KaTeX レンダリング ($ 除去) ★
             const problemTextElement = document.getElementById('problem-text');
-            const questionKatexString = currentQuestion.question.slice(1, -1); // 先頭と末尾の $ を除去
+            // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
+            let questionKatexString = currentQuestion.question;
+            if (questionKatexString.startsWith('$') && questionKatexString.endsWith('$')) {
+                 questionKatexString = questionKatexString.slice(1, -1); 
+            } else {
+                 console.warn("Question text might be missing $ delimiters:", currentQuestion.question);
+            }
+
             try {
                 katex.render(questionKatexString, problemTextElement, {
                     throwOnError: true, // エラーがあればコンソールに出力
@@ -1000,7 +1007,14 @@ function showQuestion() {
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
                 const originalText = element.textContent; // 元の $付きテキストを取得
-                const katexString = originalText.slice(1, -1); // 先頭と末尾の $ を除去
+                 // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
+                let katexString = originalText;
+                 if (katexString.startsWith('$') && katexString.endsWith('$')) {
+                     katexString = katexString.slice(1, -1); 
+                 } else {
+                     console.warn("Choice text might be missing $ delimiters:", originalText);
+                 }
+                
                 try {
                     // 要素の中身をKaTeXでレンダリング（元のテキストは上書きされる）
                     katex.render(katexString, element, {
@@ -1011,7 +1025,6 @@ function showQuestion() {
                     // KaTeXレンダリングエラー時のフォールバック
                     console.error("KaTeX render error on choice:", originalText, e);
                     // エラーの場合は元のテキストのままにする（innerHTMLを上書きしない）
-                    // element.innerHTML = originalText; // ← この行は不要（textContentが元のままなので）
                 }
             });
 
