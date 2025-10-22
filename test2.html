@@ -682,11 +682,13 @@ const fullQuizDataBank = [
             
             const timeInfoDisplay = document.getElementById('time-info');
             const rankInfoDisplay = document.getElementById('rank-info');
+            const trophyDisplay = document.getElementById('trophy-message'); // ★ 追加
 
             scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
             timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
             rankInfoDisplay.textContent = rank; 
             rankInfoDisplay.style.color = rankColor;
+            trophyDisplay.textContent = trophyMessage; // ★ 追加
         }
         
     </script>
