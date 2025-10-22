@@ -187,8 +187,8 @@
                  return;
             }
 
-            testList.forEach(test => { // ★ 変数名を変更
-                const status = achievements[test.id]; // ★ test.id でデータを参照
+            testList.forEach(test => { 
+                const status = achievements[test.id]; // 'musou', 'normal', 'apple', or undefined
                 let icon = '➖';
                 let iconClass = 'none';
                 
@@ -198,12 +198,16 @@
                 } else if (status === 'normal') {
                     icon = '⭐';
                     iconClass = 'normal';
+                } else if (status === 'apple') { // ★★★ この else if を追加 ★★★
+                    icon = '🍎';
+                    iconClass = 'apple';
                 }
                 
                 const item = document.createElement('li');
-                item.className = 'achievement-item';
+                // ... (中略) ...
                 item.innerHTML = `
-                    <div class="test-id">${test.title}</div> <div class="status-icon ${iconClass}">${icon}</div>
+                    <div class="test-id">${test.title}</div>
+                    <div class="status-icon ${iconClass}">${icon}</div>
                 `;
                 listElement.appendChild(item);
             });
