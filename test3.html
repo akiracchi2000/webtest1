@@ -618,17 +618,47 @@ const fullQuizDataBank = [
 
             // ★ 5. 履歴キー（ファイルごとに変える） ★
             const historyKey = 'algebraHistory'; // ★「文字式」用のキー
-            
-            if (finalScore === totalPoints && (rankName === 'S' || rankName === 'A')) {
-                let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
-                const newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
-                const currentBest = achievements[thisTestId]; 
 
-                if (newLevel === 'musou' || currentBest !== 'musou') {
+            // --- 達成状況の保存ロジック ---
+            let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+            const currentBest = achievements[thisTestId]; // 'musou', 'normal', 'apple', または undefined
+
+            // 1. 満点かどうかをまず確認
+            if (finalScore === totalPoints) {
+                
+                let newLevel = '';
+
+                // 2. 満点の場合、ランクを確認
+                if (rankName === 'S' || rankName === 'A') {
+                    // S/Aランク (👑 or ⭐)
+                    newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
+                } else {
+                    // B/Cランク (🍎)
+                    newLevel = 'apple';
+                }
+
+                // 3. 達成状況を更新 (格下げはしない)
+                // 優先度: musou(👑) > normal(⭐) > apple(🍎) > undefined
+                
+                let shouldUpdate = false;
+                
+                if (newLevel === 'musou') {
+                    // 👑は最強。いつでも更新。
+                    shouldUpdate = true;
+                } else if (newLevel === 'normal' && (currentBest !== 'musou')) {
+                    // ⭐は、相手が👑でなければ更新。
+                    shouldUpdate = true;
+                } else if (newLevel === 'apple' && (currentBest !== 'musou' && currentBest !== 'normal')) {
+                    // 🍎は、相手が👑でも⭐でもなければ更新。
+                    shouldUpdate = true;
+                }
+
+                if (shouldUpdate) {
                     achievements[thisTestId] = newLevel;
                     localStorage.setItem('quizAchievements', JSON.stringify(achievements));
                 }
             }
+            // --- 達成状況の保存ロジックここまで ---
             
             // --- 履歴保存処理 ---
              const newResult = {
