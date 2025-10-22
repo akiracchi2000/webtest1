@@ -961,14 +961,16 @@ const fullQuizDataBank = [
         }
 
         // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
-        function showQuestion() {
+function showQuestion() {
             const currentQuestion = selectedQuizData[currentQuestionIndex];
-            
+
+            // 選択肢のHTMLを生成（onclick属性には $ を除去したものを渡す）
             const choicesHtml = currentQuestion.choices.map(choice => {
                 const onclickChoice = choice.replace(/\$/g, ''); // $ 除去
                 return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
             }).join('');
 
+            // 問題エリアのHTMLを設定
             questionArea.innerHTML = `
                 <div class="question-block">
                     <div class="problem-text" id="problem-text"></div>
@@ -979,35 +981,41 @@ const fullQuizDataBank = [
                     </div>
                 </div>
             `;
-            
-            // ★ 問題文の $ 除去 ★
+
+            // ★ 問題文の KaTeX レンダリング ($ 除去) ★
             const problemTextElement = document.getElementById('problem-text');
-            const questionKatexString = currentQuestion.question.slice(1, -1); // $ 除去
+            const questionKatexString = currentQuestion.question.slice(1, -1); // 先頭と末尾の $ を除去
             try {
-                katex.render(questionKatexString, problemTextElement, { 
-                    throwOnError: true,
-                    displayMode: true
+                katex.render(questionKatexString, problemTextElement, {
+                    throwOnError: true, // エラーがあればコンソールに出力
+                    displayMode: true  // 問題文は中央揃えのディスプレイモード
                 });
             } catch (e) {
+                 // KaTeXレンダリングエラー時のフォールバック
                  console.error("KaTeX render error on question:", currentQuestion.question, e);
-                 problemTextElement.textContent = currentQuestion.question;
+                 problemTextElement.textContent = currentQuestion.question; // 元のテキストを表示
             }
 
-            // ★ 選択肢の $ 除去 ★
+            // ★ 選択肢の KaTeX レンダリング ($ 除去) ★
             const choiceElements = questionArea.querySelectorAll('.choice');
             choiceElements.forEach(element => {
-                const katexString = element.textContent.slice(1, -1); // $ 除去
+                const originalText = element.textContent; // 元の $付きテキストを取得
+                const katexString = originalText.slice(1, -1); // 先頭と末尾の $ を除去
                 try {
-                    katex.render(katexString, element, { 
-                        throwOnError: true, 
-                        displayMode: false 
-                    }); 
+                    // 要素の中身をKaTeXでレンダリング（元のテキストは上書きされる）
+                    katex.render(katexString, element, {
+                        throwOnError: true, // エラーがあればコンソールに出力
+                        displayMode: false // 選択肢はインラインモード
+                    });
                 } catch (e) {
-                    console.error("KaTeX render error on choice:", element.textContent, e); 
-                    element.innerHTML = element.textContent; 
+                    // KaTeXレンダリングエラー時のフォールバック
+                    console.error("KaTeX render error on choice:", originalText, e);
+                    // エラーの場合は元のテキストのままにする（innerHTMLを上書きしない）
+                    // element.innerHTML = originalText; // ← この行は不要（textContentが元のままなので）
                 }
             });
-            
+
+            // タイマー開始
             questionStartTime = Date.now();
             startTimer();
         }
