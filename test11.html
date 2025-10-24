@@ -980,65 +980,57 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
-        // ===== クイズ本体の関数 (renderMathInElement を使うバージョン) =====
+        // ===== クイズ本体の関数 (renderMathInElement を使う修正版) =====
         function showQuestion() {
             // QDが空またはインデックス範囲外ならエラー処理
             if (!fullQuizDataBank || currentQuestionIndex >= fullQuizDataBank.length) {
                  console.error("Invalid question index or fullQuizDataBank is empty.");
-                 // 実際のHTML要素に合わせてエラー表示
-                 const questionTextEl = document.getElementById('problem-text'); // ★ ID確認
-                 if (questionTextEl) {
-                     questionTextEl.innerHTML = "エラー: 問題データの読み込みに失敗しました。";
+                 const problemTextEl = document.getElementById('problem-text');
+                 if (problemTextEl) { // エラー表示用に要素を取得試行
+                     problemTextEl.innerHTML = "エラー: 問題データの読み込みに失敗しました。";
+                 } else { // それもなければ questionArea に表示
+                     questionArea.innerHTML = "<p>エラー: 問題データの読み込みに失敗しました。</p>";
                  }
                  return;
              }
 
-            // UIリセット (存在しない要素への参照を削除)
-             // feedbackEl.style.display = 'none'; // feedbackEl は存在しない可能性
-             // nextBtn.style.display = 'none';    // nextButton を使う
-             // resultsBtn.style.display = 'none'; // nextButton を使う (innerTextで切り替え)
+            // UIリセット (nextButtonのみ操作)
              nextButton.style.display = 'none'; // nextButton (ID: next-btn) を隠す
-             optionsContainer.innerHTML = '';   // optionsContainer をクリア
+             // questionAreaの中身はこれから作るため、ここでクリアは不要
 
             const currentQuestion = selectedQuizData[currentQuestionIndex];
 
-            // 問題文要素を取得 (ID確認)
+            // 選択肢のHTMLを生成 (変更なし)
+            const choicesHtml = currentQuestion.choices.map(choice => {
+                // $を除去した値を selectAnswer に渡すように修正
+                const onclickChoice = choice.replace(/\$/g, '');
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+            }).join('');
+
+            // ★★★ 問題エリアのHTMLを先に設定 ★★★
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+
+            // ★★★ HTML設定後に要素を取得 ★★★
             const questionTextEl = document.getElementById('problem-text');
-            if (!questionTextEl) {
-                console.error("Element with ID 'problem-text' not found.");
-                return; // 要素がなければ処理中断
+            const optionsContainer = questionArea.querySelector('.choices'); // '.choices' クラスを持つ要素を取得
+
+            // 要素が存在するか確認 (念のため)
+            if (!questionTextEl || !optionsContainer) {
+                console.error("Required elements ('problem-text' or '.choices') not found after setting innerHTML.");
+                return;
             }
+
+            // 問題文を要素に設定
             questionTextEl.innerHTML = currentQuestion.question || "(問題文がありません)";
-
-            // 選択肢ボックスを作成 (シャッフル対応済み)
-            if (currentQuestion.choices && Array.isArray(currentQuestion.choices)) {
-                 const shuffledOptions = [...currentQuestion.choices];
-                 for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                     const j = Math.floor(Math.random() * (i + 1));
-                     [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-                 }
-
-                shuffledOptions.forEach(optionText => {
-                    const optionBox = document.createElement('div');
-                    optionBox.innerHTML = optionText || "(選択肢テキストなし)";
-                    optionBox.classList.add('choice');
-                    // ★ datasetではなく、元のテキストを直接onclickの引数にする (selectAnswerの引数に合わせる) ★
-                    // optionBox.dataset.optionValue = optionText;
-
-                    optionBox.addEventListener('click', () => {
-                        // ★ feedbackMessage への参照を削除 ★
-                        // const feedbackMessage = document.getElementById('feedback-message');
-                        // if (feedbackMessage && !feedbackMessage.classList.contains('hidden')) { return; }
-
-                        // ★ selectAnswer の引数を修正: $を除去した値を渡す ★
-                        const selectedValue = optionText.replace(/\$/g, '');
-                        selectAnswer(optionBox, selectedValue); // ★ 第2引数を $除去したものに変更 ★
-                    });
-                    optionsContainer.appendChild(optionBox);
-                });
-            } else {
-                optionsContainer.innerHTML = '<p>(選択肢データがありません)</p>';
-            }
 
             // ★★★ KaTeXの auto-render を呼び出す ★★★
             try {
@@ -1048,17 +1040,19 @@ const fullQuizDataBank = [
                     {left: '\\(', right: '\\)', display: false},
                     {left: '\\[', right: '\\]', display: true}
                 ];
+                // 問題文と選択肢コンテナ全体に auto-render を適用
                 renderMathInElement(questionTextEl, { delimiters: katexDelimiters });
                 renderMathInElement(optionsContainer, { delimiters: katexDelimiters });
             } catch (e) {
                 console.error("Error rendering KaTeX for question/options:", e);
+                // エラー時でもテキストは表示されるはずなので、ここでは追加の処理はしない
             }
 
-            // タイマー開始
+            // タイマー開始 (変更なし)
             questionStartTime = Date.now();
             startTimer();
         }
-
+        
         function selectAnswer(element, selectedChoice) { // ★ 引数を修正 ★
              stopTimer();
              const timeTaken = (Date.now() - questionStartTime) / 1000;
