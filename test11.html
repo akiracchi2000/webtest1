@@ -1,1 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>計算テスト (テンプレートA)</title>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
 
+    <style>
+        /* ページの基本スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            transition: background-color 0.5s ease;
+        }
+        
+        body.timer-warning {
+            background-color: #ffebee;
+        }
+
+        /* ===== モード選択画面のスタイル ===== */
+        #mode-selection {
+            text-align: center;
+            background: #fff;
+            padding: 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #mode-selection h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #normal-mode-btn {
+            background-color: #3498db;
+        }
+        #musou-mode-btn {
+            background-color: #c0392b;
+        }
+
+        /* ===== 無双モード用の背景画像 ===== */
+        #musou-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('./hannya.png'); /* 画像パス */
+            background-repeat: repeat;
+            background-size: 100px; 
+            background-position: center;
+            opacity: 0.15;
+            z-index: -1;
+        }
+
+        /* クイズ全体のコンテナ */
+        .quiz-container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .timer-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            margin-bottom: 1.5em;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            border-radius: 15px;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+        .timer-bar.warning {
+            background-color: #dc3545;
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin: 0 0 1em 0;
+        }
+
+        .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
+        .choice:hover { background-color: #d1d9e0; }
+        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .choices.answered { pointer-events: none; }
+        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+        .feedback-area { margin-top: 1.5em; min-height: 150px; }
+        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
+        .feedback-message.correct-feedback { color: #28a745; }
+        .feedback-message.incorrect-feedback { color: #dc3545; }
+        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
+        .katex-display { text-align: left !important; }
+        .controls { text-align: center; margin-top: 1em; height: 50px; }
+        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #next-btn:hover { background-color: #2980b9; }
+        
+        #results { text-align: center; }
+        #results h2 { color: #2c3e50; }
+        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
+        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        .trophy-message {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e74c3c; /* 🍎の色に合わせました */
+            margin: 0.5em 0;
+            min-height: 1.2em; /* メッセージが無い時にレイアウトが崩れないように */
+        }
+        
+        .hidden { display: none; }
+        
+        /* ===== トップへ戻るボタンのスタイル ===== */
+        .home-btn {
+            display: inline-block;
+            margin-top: 1.5em;
+            padding: 10px 25px;
+            font-size: 1em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #6c757d;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .home-btn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mode-selection">
+        <h1>モードを選択</h1>
+        <div class="mode-buttons">
+            <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
+            <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
+            </div>
+        <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
+    </div>
+
+    <div class="quiz-container hidden" id="quiz-main">
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+            <span class="timer-text" id="timer-text"></span>
+        </div>
+        
+        <h1>2次方程式 (上級)</h1>
+        <div id="question-area"></div>
+        
+        <div id="results" class="hidden">
+            <h2>テスト終了！</h2>
+            <p id="score"></p>
+            <p id="time-info"></p>
+            <p id="rank-info"></p>
+            <p id="trophy-message" class="trophy-message"></p> <p class="sub-message">お疲れ様でした！</p>
+            <a href="./index.html" class="home-btn">トップページに戻る</a>
+        </div>
+        
+        <div class="controls">
+            <button id="next-btn" class="hidden">次の問題へ</button>
+        </div>
+    </div>
+
+    <div id="musou-background" class="hidden"></div>
+
+
+    <script>
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★ 
+        // ★  const fullQuizDataBank = [ ... ];
+        // ★  (↑ ここに $ を含む100問のデータバンクを貼り付け)
+        // ★ 
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+    // ===== 全100問の問題データバンク (2次方程式・(x+a)^2+b=c(x+d)形式・実数解 v1) [修正版 v2] =====
+const fullQuizDataBank = [
+  // --- 【1番目が正解の問題】 (25問) ---
+  {
+    question: "$(x+3)^2-11 = 5(x+2)$",
+    choices: ["$x = 3, -4$", "$x = 3, 4$", "$x = -3, 4$", "$x = -3, -4$"],
+    answer: "$x = 3, -4$",
+    process: "\\begin{aligned} & (x+3)^2-11 = 5(x+2) \\\\ & x^2+6x+9-11 = 5x+10 \\\\ & x^2+6x-2 = 5x+10 \\\\ & x^2+x-12 = 0 \\\\ & (x+4)(x-3) = 0 \\\\ & x = 3, -4 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-1 = 2(x+1)$",
+    choices: ["$x = \\pm \\sqrt{2}$", "$x = \\pm 2$", "$x = 0, -2$", "$x = 1 \\pm \\sqrt{2}$"],
+    answer: "$x = \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x+1)^2-1 = 2(x+1) \\\\ & x^2+2x+1-1 = 2x+2 \\\\ & x^2+2x = 2x+2 \\\\ & x^2-2 = 0 \\\\ & x^2 = 2 \\\\ & x = \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2+1 = x+3$",
+    choices: ["$x = -1, -2$", "$x = 1, 2$", "$x = -1, 2$", "$x = 1, -2$"],
+    answer: "$x = -1, -2$",
+    process: "\\begin{aligned} & (x+2)^2+1 = x+3 \\\\ & x^2+4x+4+1 = x+3 \\\\ & x^2+4x+5 = x+3 \\\\ & x^2+3x+2 = 0 \\\\ & (x+1)(x+2) = 0 \\\\ & x = -1, -2 \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-5 = 3(x+1)$",
+    choices: ["$x = -1, 7$", "$x = 1, -7$", "$x = 1, 7$", "$x = -1, -7$"],
+    answer: "$x = -1, 7$",
+    process: "\\begin{aligned} & (x-1)^2-5 = 3(x+1) \\\\ & x^2-2x+1-5 = 3x+3 \\\\ & x^2-2x-4 = 3x+3 \\\\ & x^2-5x-7 = 0 \\\\ & (x-7)(x+1)=0 \\\\ & x = 7, -1 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-1 = 4(x+1)$",
+    choices: ["$x = 1 \\pm \\sqrt{5}$", "$x = -1 \\pm \\sqrt{5}$", "$x = 1 \\pm \\sqrt{3}$", "$x = -1 \\pm \\sqrt{3}$"],
+    answer: "$x = 1 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x+1)^2-1 = 4(x+1) \\\\ & x^2+2x+1-1 = 4x+4 \\\\ & x^2+2x = 4x+4 \\\\ & x^2-2x-4 = 0 \\\\ & x = \\frac{-(-2) \\pm \\sqrt{(-2)^2 - 4(1)(-4)}}{2(1)} \\\\ & x = \\frac{2 \\pm \\sqrt{20}}{2} = \\frac{2 \\pm 2\\sqrt{5}}{2} \\\\ & x = 1 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-1 = x-2$",
+    choices: ["$x = 1, 2$", "$x = -1, -2$", "$x = 1, -2$", "$x = -1, 2$"],
+    answer: "$x = 1, 2$",
+    process: "\\begin{aligned} & (x-1)^2-1 = x-2 \\\\ & x^2-2x+1-1 = x-2 \\\\ & x^2-2x = x-2 \\\\ & x^2-3x+2 = 0 \\\\ & (x-1)(x-2) = 0 \\\\ & x = 1, 2 \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-4 = 0$",
+    choices: ["$x = 3, -1$", "$x = 3, 1$", "$x = -3, 1$", "$x = -3, -1$"],
+    answer: "$x = 3, -1$",
+    process: "\\begin{aligned} & (x-1)^2-4 = 0 \\\\ & x^2-2x+1-4 = 0 \\\\ & x^2-2x-3 = 0 \\\\ & (x-3)(x+1) = 0 \\\\ & x = 3, -1 \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-2 = 0$",
+    choices: ["$x = 1 \\pm \\sqrt{2}$", "$x = -1 \\pm \\sqrt{2}$", "$x = 1 \\pm 2$", "$x = 2 \\pm \\sqrt{2}$"],
+    answer: "$x = 1 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x-1)^2-2 = 0 \\\\ & x^2-2x+1-2 = 0 \\\\ & x^2-2x-1 = 0 \\\\ & x = \\frac{-(-2) \\pm \\sqrt{(-2)^2 - 4(1)(-1)}}{2(1)} \\\\ & x = \\frac{2 \\pm \\sqrt{8}}{2} = \\frac{2 \\pm 2\\sqrt{2}}{2} \\\\ & x = 1 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-9 = 0$",
+    choices: ["$x = 4, -2$", "$x = 4, 2$", "$x = -4, 2$", "$x = -4, -2$"],
+    answer: "$x = 4, -2$",
+    process: "\\begin{aligned} & (x-1)^2-9 = 0 \\\\ & (x-1)^2 = 9 \\\\ & x-1 = \\pm 3 \\\\ & x = 1 \\pm 3 \\\\ & x = 4, -2 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-3 = 0$",
+    choices: ["$x = -2 \\pm \\sqrt{3}$", "$x = 2 \\pm \\sqrt{3}$", "$x = -2 \\pm 3$", "$x = 3 \\pm \\sqrt{2}$"],
+    answer: "$x = -2 \\pm \\sqrt{3}$",
+    process: "\\begin{aligned} & (x+2)^2-3 = 0 \\\\ & (x+2)^2 = 3 \\\\ & x+2 = \\pm \\sqrt{3} \\\\ & x = -2 \\pm \\sqrt{3} \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-4 = 0$",
+    choices: ["$x = 1, -3$", "$x = 1, 3$", "$x = -1, 3$", "$x = -1, -3$"],
+    answer: "$x = 1, -3$",
+    process: "\\begin{aligned} & (x+1)^2-4 = 0 \\\\ & (x+1)^2 = 4 \\\\ & x+1 = \\pm 2 \\\\ & x = -1 \\pm 2 \\\\ & x = 1, -3 \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-2 = 0$",
+    choices: ["$x = 3 \\pm \\sqrt{2}$", "$x = -3 \\pm \\sqrt{2}$", "$x = 3 \\pm 2$", "$x = 2 \\pm \\sqrt{3}$"],
+    answer: "$x = 3 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x-3)^2-2 = 0 \\\\ & (x-3)^2 = 2 \\\\ & x-3 = \\pm \\sqrt{2} \\\\ & x = 3 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-4 = 0$",
+    choices: ["$x = 1, 5$", "$x = -1, -5$", "$x = -1, 5$", "$x = 1, -5$"],
+    answer: "$x = 1, 5$",
+    process: "\\begin{aligned} & (x-3)^2-4 = 0 \\\\ & (x-3)^2 = 4 \\\\ & x-3 = \\pm 2 \\\\ & x = 3 \\pm 2 \\\\ & x = 5, 1 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2 - 5 = 2(x+1)$",
+    choices: ["$x = \\pm \\sqrt{6}$", "$x = \\pm 6$", "$x = \\pm 3$", "$x = \\pm \\sqrt{5}$"],
+    answer: "$x = \\pm \\sqrt{6}$",
+    process: "\\begin{aligned} & (x+1)^2 - 5 = 2(x+1) \\\\ & x^2+2x+1-5 = 2x+2 \\\\ & x^2+2x-4 = 2x+2 \\\\ & x^2-6 = 0 \\\\ & x^2 = 6 \\\\ & x = \\pm \\sqrt{6} \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2 - 10 = 3(x+1)$",
+    choices: ["$x = \\frac{-1 \\pm \\sqrt{37}}{2}$", "$x = \\frac{1 \\pm \\sqrt{37}}{2}$", "$x = \\frac{-1 \\pm \\sqrt{35}}{2}$", "$x = \\frac{1 \\pm \\sqrt{35}}{2}$"],
+    answer: "$x = \\frac{-1 \\pm \\sqrt{37}}{2}$",
+    process: "\\begin{aligned} & (x+2)^2 - 10 = 3(x+1) \\\\ & x^2+4x+4-10 = 3x+3 \\\\ & x^2+4x-6 = 3x+3 \\\\ & x^2+x-9 = 0 \\\\ & x = \\frac{-1 \\pm \\sqrt{1^2 - 4(1)(-9)}}{2(1)} \\\\ & x = \\frac{-1 \\pm \\sqrt{1+36}}{2} \\\\ & x = \\frac{-1 \\pm \\sqrt{37}}{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2 - 3 = x-1$",
+    choices: ["$x = \\frac{3 \\pm \\sqrt{13}}{2}$", "$x = \\frac{-3 \\pm \\sqrt{13}}{2}$", "$x = \\frac{3 \\pm \\sqrt{5}}{2}$", "$x = \\frac{-3 \\pm \\sqrt{5}}{2}$"],
+    answer: "$x = \\frac{3 \\pm \\sqrt{13}}{2}$",
+    process: "\\begin{aligned} & (x-1)^2 - 3 = x-1 \\\\ & x^2-2x+1-3 = x-1 \\\\ & x^2-2x-2 = x-1 \\\\ & x^2-3x-1 = 0 \\\\ & x = \\frac{-(-3) \\pm \\sqrt{(-3)^2 - 4(1)(-1)}}{2(1)} \\\\ & x = \\frac{3 \\pm \\sqrt{9+4}}{2} \\\\ & x = \\frac{3 \\pm \\sqrt{13}}{2} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2 - 1 = 4(x+3)$",
+    choices: ["$x = -1 \\pm \\sqrt{5}$", "$x = 1 \\pm \\sqrt{5}$", "$x = -1 \\pm 2$", "$x = -1 \\pm \\sqrt{3}$"],
+    answer: "$x = -1 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x+3)^2 - 1 = 4(x+3) \\\\ & x^2+6x+9-1 = 4x+12 \\\\ & x^2+6x+8 = 4x+12 \\\\ & x^2+2x-4 = 0 \\\\ & x = \\frac{-2 \\pm \\sqrt{2^2 - 4(1)(-4)}}{2(1)} \\\\ & x = \\frac{-2 \\pm \\sqrt{20}}{2} = \\frac{-2 \\pm 2\\sqrt{5}}{2} \\\\ & x = -1 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2 + 1 = 2(x-1)$",
+    choices: ["$x = 3 \\pm \\sqrt{2}$", "$x = -3 \\pm \\sqrt{2}$", "$x = 3 \\pm 2$", "$x = 2 \\pm \\sqrt{3}$"],
+    answer: "$x = 3 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x-2)^2 + 1 = 2(x-1) \\\\ & x^2-4x+4+1 = 2x-2 \\\\ & x^2-4x+5 = 2x-2 \\\\ & x^2-6x+7 = 0 \\\\ & x = \\frac{-(-6) \\pm \\sqrt{(-6)^2 - 4(1)(7)}}{2(1)} \\\\ & x = \\frac{6 \\pm \\sqrt{36-28}}{2} = \\frac{6 \\pm \\sqrt{8}}{2} \\\\ & x = \\frac{6 \\pm 2\\sqrt{2}}{2} = 3 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-4 = 0$",
+    choices: ["$x = 1, 5$", "$x = -1, -5$", "$x = -1, 5$", "$x = 1, -5$"],
+    answer: "$x = 1, 5$",
+    process: "\\begin{aligned} & (x-3)^2-4 = 0 \\\\ & (x-3)^2 = 4 \\\\ & x-3 = \\pm 2 \\\\ & x = 3 \\pm 2 \\\\ & x = 5, 1 \\end{aligned}"
+  },
+  {
+    question: "$(x+4)^2-4 = 0$",
+    choices: ["$x = -2, -6$", "$x = 2, 6$", "$x = 2, -6$", "$x = -2, 6$"],
+    answer: "$x = -2, -6$",
+    process: "\\begin{aligned} & (x+4)^2-4 = 0 \\\\ & (x+4)^2 = 4 \\\\ & x+4 = \\pm 2 \\\\ & x = -4 \\pm 2 \\\\ & x = -2, -6 \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2-8 = 0$",
+    choices: ["$x = -3 \\pm 2\\sqrt{2}$", "$x = 3 \\pm 2\\sqrt{2}$", "$x = -3 \\pm \\sqrt{8}$", "$x = -3 \\pm 4\\sqrt{2}$"],
+    answer: "$x = -3 \\pm 2\\sqrt{2}$",
+    process: "\\begin{aligned} & (x+3)^2-8 = 0 \\\\ & (x+3)^2 = 8 \\\\ & x+3 = \\pm \\sqrt{8} \\\\ & x = -3 \\pm 2\\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-5)^2-5 = 0$",
+    choices: ["$x = 5 \\pm \\sqrt{5}$", "$x = -5 \\pm \\sqrt{5}$", "$x = 5 \\pm 5$", "$x = \\pm 5$"],
+    answer: "$x = 5 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-5)^2-5 = 0 \\\\ & (x-5)^2 = 5 \\\\ & x-5 = \\pm \\sqrt{5} \\\\ & x = 5 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-1 = x-2$",
+    choices: ["$x = 1, 2$", "$x = -1, -2$", "$x = 1, -2$", "$x = -1, 2$"],
+    answer: "$x = 1, 2$",
+    process: "\\begin{aligned} & (x-1)^2-1 = x-2 \\\\ & x^2-2x+1-1 = x-2 \\\\ & x^2-2x = x-2 \\\\ & x^2-3x+2 = 0 \\\\ & (x-1)(x-2) = 0 \\\\ & x = 1, 2 \\end{aligned}"
+  },
+  // --- 【2番目が正解の問題】 (25問) ---
+  {
+    question: "$(x+1)^2-1 = x+1$",
+    choices: ["$x = 0, 1$", "$x = 0, -1$", "$x = 0, -2$", "$x = 1, -1$"],
+    answer: "$x = 0, -1$",
+    process: "\\begin{aligned} & (x+1)^2-1 = x+1 \\\\ & x^2+2x+1-1 = x+1 \\\\ & x^2+2x = x+1 \\\\ & x^2+x = 0 \\\\ & x(x+1) = 0 \\\\ & x = 0, -1 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-4 = 0$",
+    choices: ["$x = 0, 4$", "$x = 0, -4$", "$x = 0, 2$", "$x = 2, -2$"],
+    answer: "$x = 0, -4$",
+    process: "\\begin{aligned} & (x+2)^2-4 = 0 \\\\ & (x+2)^2 = 4 \\\\ & x+2 = \\pm 2 \\\\ & x = -2 \\pm 2 \\\\ & x = 0, -4 \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-1 = 0$",
+    choices: ["$x = 1, 3$", "$x = 2, 4$", "$x = 1, 4$", "$x = 2, 3$"],
+    answer: "$x = 2, 4$",
+    process: "\\begin{aligned} & (x-3)^2-1 = 0 \\\\ & (x-3)^2 = 1 \\\\ & x-3 = \\pm 1 \\\\ & x = 3 \\pm 1 \\\\ & x = 4, 2 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-5 = 2(x+3)$",
+    choices: ["$x = \\pm 10$", "$x = \\pm \\sqrt{10}$", "$x = \\pm \\sqrt{11}$", "$x = \\pm \\sqrt{5}$"],
+    answer: "$x = \\pm \\sqrt{10}$",
+    process: "\\begin{aligned} & (x+1)^2-5 = 2(x+3) \\\\ & x^2+2x+1-5 = 2x+6 \\\\ & x^2+2x-4 = 2x+6 \\\\ & x^2-10 = 0 \\\\ & x^2 = 10 \\\\ & x = \\pm \\sqrt{10} \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2 = x-2$",
+    choices: ["$x = 1, 2$", "$x = 2, 3$", "$x = 3, 4$", "$x = 1, 3$"],
+    answer: "$x = 2, 3$",
+    process: "\\begin{aligned} & (x-2)^2 = x-2 \\\\ & x^2-4x+4 = x-2 \\\\ & x^2-5x+6 = 0 \\\\ & (x-2)(x-3) = 0 \\\\ & x = 2, 3 \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2-3 = 0$",
+    choices: ["$x = -2 \\pm \\sqrt{3}$", "$x = 2 \\pm \\sqrt{3}$", "$x = 3 \\pm \\sqrt{2}$", "$x = -3 \\pm \\sqrt{2}$"],
+    answer: "$x = 2 \\pm \\sqrt{3}$",
+    process: "\\begin{aligned} & (x-2)^2-3 = 0 \\\\ & (x-2)^2 = 3 \\\\ & x-2 = \\pm \\sqrt{3} \\\\ & x = 2 \\pm \\sqrt{3} \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-9 = 0$",
+    choices: ["$x = 1, 9$", "$x = 1, 7$", "$x = -1, 7$", "$x = -1, 9$"],
+    answer: "$x = 1, 7$",
+    process: "\\begin{aligned} & (x-4)^2-9 = 0 \\\\ & (x-4)^2 = 9 \\\\ & x-4 = \\pm 3 \\\\ & x = 4 \\pm 3 \\\\ & x = 7, 1 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-6 = 0$",
+    choices: ["$x = 1 \\pm \\sqrt{6}$", "$x = -1 \\pm \\sqrt{6}$", "$x = -1 \\pm 6$", "$x = 6 \\pm 1$"],
+    answer: "$x = -1 \\pm \\sqrt{6}$",
+    process: "\\begin{aligned} & (x+1)^2-6 = 0 \\\\ & (x+1)^2 = 6 \\\\ & x+1 = \\pm \\sqrt{6} \\\\ & x = -1 \\pm \\sqrt{6} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2-4 = 0$",
+    choices: ["$x = -1, 5$", "$x = -1, -5$", "$x = 1, 5$", "$x = 1, -5$"],
+    answer: "$x = -1, -5$",
+    process: "\\begin{aligned} & (x+3)^2-4 = 0 \\\\ & (x+3)^2 = 4 \\\\ & x+3 = \\pm 2 \\\\ & x = -3 \\pm 2 \\\\ & x = -1, -5 \\end{aligned}"
+  },
+  {
+    question: "$x^2-1 = 0$",
+    choices: ["$x = 1$", "$x = \\pm 1$", "$x = 0, 1$", "$x = 0, -1$"],
+    answer: "$x = \\pm 1$",
+    process: "\\begin{aligned} & x^2-1 = 0 \\\\ & x^2 = 1 \\\\ & x = \\pm 1 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-3 = 2(x+2)$",
+    choices: ["$x = 1, 3$", "$x = 1, -3$", "$x = -1, 3$", "$x = -1, -3$"],
+    answer: "$x = 1, -3$",
+    process: "\\begin{aligned} & (x+2)^2-3 = 2(x+2) \\\\ & x^2+4x+4-3 = 2x+4 \\\\ & x^2+4x+1 = 2x+4 \\\\ & x^2+2x-3 = 0 \\\\ & (x+3)(x-1) = 0 \\\\ & x = 1, -3 \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-5 = 0$",
+    choices: ["$x = 1 \\pm 5$", "$x = 1 \\pm \\sqrt{5}$", "$x = -1 \\pm \\sqrt{5}$", "$x = 5 \\pm 1$"],
+    answer: "$x = 1 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-1)^2-5 = 0 \\\\ & (x-1)^2 = 5 \\\\ & x-1 = \\pm \\sqrt{5} \\\\ & x = 1 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2-1 = 0$",
+    choices: ["$x = -2, 4$", "$x = -2, -4$", "$x = 2, 4$", "$x = 2, -4$"],
+    answer: "$x = -2, -4$",
+    process: "\\begin{aligned} & (x+3)^2-1 = 0 \\\\ & (x+3)^2 = 1 \\\\ & x+3 = \\pm 1 \\\\ & x = -3 \\pm 1 \\\\ & x = -2, -4 \\end{aligned}"
+  },
+  {
+    question: "$x^2-4 = 0$",
+    choices: ["$x = 2$", "$x = \\pm 2$", "$x = 4$", "$x = \\pm 4$"],
+    answer: "$x = \\pm 2$",
+    process: "\\begin{aligned} & x^2-4 = 0 \\\\ & x^2 = 4 \\\\ & x = \\pm 2 \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-1 = 2(x-4)$",
+    choices: ["$x = 5 \\pm 3$", "$x = 5 \\pm \\sqrt{2}$", "$x = 4 \\pm \\sqrt{2}$", "$x = -5 \\pm \\sqrt{2}$"],
+    answer: "$x = 5 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x-4)^2-1 = 2(x-4) \\\\ & x^2-8x+16-1 = 2x-8 \\\\ & x^2-8x+15 = 2x-8 \\\\ & x^2-10x+23 = 0 \\\\ & x = \\frac{-(-10) \\pm \\sqrt{(-10)^2 - 4(1)(23)}}{2(1)} \\\\ & x = \\frac{10 \\pm \\sqrt{100-92}}{2} = \\frac{10 \\pm \\sqrt{8}}{2} \\\\ & x = \\frac{10 \\pm 2\\sqrt{2}}{2} = 5 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-5 = 4(x+1)$",
+    choices: ["$x = \\pm 5$", "$x = \\pm \\sqrt{5}$", "$x = \\pm 1$", "$x = \\pm \\sqrt{3}$"],
+    answer: "$x = \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x+2)^2-5 = 4(x+1) \\\\ & x^2+4x+4-5 = 4x+4 \\\\ & x^2+4x-1 = 4x+4 \\\\ & x^2-5 = 0 \\\\ & x^2 = 5 \\\\ & x = \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-2 = x-3$",
+    choices: ["$x = 2, 3$", "$x = 2, 5$", "$x = 3, 5$", "$x = -2, -5$"],
+    answer: "$x = 2, 5$",
+    process: "\\begin{aligned} & (x-3)^2-2 = x-3 \\\\ & x^2-6x+9-2 = x-3 \\\\ & x^2-6x+7 = x-3 \\\\ & x^2-7x+10 = 0 \\\\ & (x-2)(x-5) = 0 \\\\ & x = 2, 5 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-3 = 0$",
+    choices: ["$x = 1 \\pm \\sqrt{3}$", "$x = -1 \\pm \\sqrt{3}$", "$x = -1 \\pm 3$", "$x = 3 \\pm 1$"],
+    answer: "$x = -1 \\pm \\sqrt{3}$",
+    process: "\\begin{aligned} & (x+1)^2-3 = 0 \\\\ & (x+1)^2 = 3 \\\\ & x+1 = \\pm \\sqrt{3} \\\\ & x = -1 \\pm \\sqrt{3} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-1 = 0$",
+    choices: ["$x = 2, 3$", "$x = 2, 4$", "$x = 3, 4$", "$x = -2, -4$"],
+    answer: "$x = 2, 4$",
+    process: "\\begin{aligned} & (x-3)^2-1 = 0 \\\\ & (x-3)^2 = 1 \\\\ & x-3 = \\pm 1 \\\\ & x = 3 \\pm 1 \\\\ & x = 4, 2 \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-3 = 0$",
+    choices: ["$x = -4 \\pm \\sqrt{3}$", "$x = 4 \\pm \\sqrt{3}$", "$x = 3 \\pm \\sqrt{4}$", "$x = 4 \\pm 3$"],
+    answer: "$x = 4 \\pm \\sqrt{3}$",
+    process: "\\begin{aligned} & (x-4)^2-3 = 0 \\\\ & (x-4)^2 = 3 \\\\ & x-4 = \\pm \\sqrt{3} \\\\ & x = 4 \\pm \\sqrt{3} \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-9 = 0$",
+    choices: ["$x = 1, 5$", "$x = 1, -5$", "$x = -1, 5$", "$x = -1, -5$"],
+    answer: "$x = 1, -5$",
+    process: "\\begin{aligned} & (x+2)^2-9 = 0 \\\\ & (x+2)^2 = 9 \\\\ & x+2 = \\pm 3 \\\\ & x = -2 \\pm 3 \\\\ & x = 1, -5 \\end{aligned}"
+  },
+  {
+    question: "$x^2-7 = 0$",
+    choices: ["$x = \\pm 7$", "$x = \\pm \\sqrt{7}$", "$x = 7$", "$x = \\sqrt{7}$"],
+    answer: "$x = \\pm \\sqrt{7}$",
+    process: "\\begin{aligned} & x^2-7 = 0 \\\\ & x^2 = 7 \\\\ & x = \\pm \\sqrt{7} \\end{aligned}"
+  },
+  {
+    // ★ 選択肢の重複を修正 (1番目を-5に変更)
+    question: "$(x-1)^2-1 = 3(x-1)$",
+    choices: ["$x = \\frac{-5 \\pm \\sqrt{13}}{2}$", "$x = \\frac{5 \\pm \\sqrt{13}}{2}$", "$x = \\frac{-5 \\pm \\sqrt{13}}{2}$", "$x = \\frac{5 \\pm \\sqrt{37}}{2}$"],
+    answer: "$x = \\frac{5 \\pm \\sqrt{13}}{2}$",
+    process: "\\begin{aligned} & (x-1)^2-1 = 3(x-1) \\\\ & x^2-2x+1-1 = 3x-3 \\\\ & x^2-2x = 3x-3 \\\\ & x^2-5x+3 = 0 \\\\ & x = \\frac{-(-5) \\pm \\sqrt{(-5)^2 - 4(1)(3)}}{2(1)} \\\\ & x = \\frac{5 \\pm \\sqrt{25-12}}{2} \\\\ & x = \\frac{5 \\pm \\sqrt{13}}{2} \\end{aligned}"
+  },
+
+  // --- 【3番目が正解の問題】 (25問) ---
+  {
+    question: "$(x+1)^2-16 = 0$",
+    choices: ["$x = 3, 5$", "$x = -3, 5$", "$x = 3, -5$", "$x = -3, -5$"],
+    answer: "$x = 3, -5$",
+    process: "\\begin{aligned} & (x+1)^2-16 = 0 \\\\ & (x+1)^2 = 16 \\\\ & x+1 = \\pm 4 \\\\ & x = -1 \\pm 4 \\\\ & x = 3, -5 \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2-16 = 0$",
+    choices: ["$x = 2, 6$", "$x = -2, 6$", "$x = 2, -6$", "$x = -2, -6$"],
+    answer: "$x = -2, 6$",
+    process: "\\begin{aligned} & (x-2)^2-16 = 0 \\\\ & (x-2)^2 = 16 \\\\ & x-2 = \\pm 4 \\\\ & x = 2 \\pm 4 \\\\ & x = 6, -2 \\end{aligned}"
+  },
+  {
+    question: "$x^2-11 = 0$",
+    choices: ["$x = \\pm 11$", "$x = 11$", "$x = \\pm \\sqrt{11}$", "$x = \\sqrt{11}$"],
+    answer: "$x = \\pm \\sqrt{11}$",
+    process: "\\begin{aligned} & x^2-11 = 0 \\\\ & x^2 = 11 \\\\ & x = \\pm \\sqrt{11} \\end{aligned}"
+  },
+  {
+    question: "$(x-5)^2-4 = 0$",
+    choices: ["$x = 3, 5$", "$x = 5, 7$", "$x = 3, 7$", "$x = -3, -7$"],
+    answer: "$x = 3, 7$",
+    process: "\\begin{aligned} & (x-5)^2-4 = 0 \\\\ & (x-5)^2 = 4 \\\\ & x-5 = \\pm 2 \\\\ & x = 5 \\pm 2 \\\\ & x = 7, 3 \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-8 = 0$",
+    choices: ["$x = 1 \\pm \\sqrt{8}$", "$x = -1 \\pm 2\\sqrt{2}$", "$x = 1 \\pm 2\\sqrt{2}$", "$x = 1 \\pm 4\\sqrt{2}$"],
+    answer: "$x = 1 \\pm 2\\sqrt{2}$",
+    process: "\\begin{aligned} & (x-1)^2-8 = 0 \\\\ & (x-1)^2 = 8 \\\\ & x-1 = \\pm \\sqrt{8} \\\\ & x = 1 \\pm 2\\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-1 = 4(x-3)$",
+    choices: ["$x = 5 \\pm \\sqrt{10}$", "$x = 10 \\pm \\sqrt{20}$", "$x = 5 \\pm \\sqrt{5}$", "$x = -5 \\pm \\sqrt{5}$"],
+    answer: "$x = 5 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-3)^2-1 = 4(x-3) \\\\ & x^2-6x+9-1 = 4x-12 \\\\ & x^2-6x+8 = 4x-12 \\\\ & x^2-10x+20 = 0 \\\\ & x = \\frac{-(-10) \\pm \\sqrt{(-10)^2 - 4(1)(20)}}{2(1)} \\\\ & x = \\frac{10 \\pm \\sqrt{100-80}}{2} = \\frac{10 \\pm \\sqrt{20}}{2} \\\\ & x = \\frac{10 \\pm 2\\sqrt{5}}{2} = 5 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2 = x+2$",
+    choices: ["$x = 1, 2$", "$x = -1, 2$", "$x = -1, -2$", "$x = 1, -2$"],
+    answer: "$x = -1, -2$",
+    process: "\\begin{aligned} & (x+2)^2 = x+2 \\\\ & x^2+4x+4 = x+2 \\\\ & x^2+3x+2 = 0 \\\\ & (x+1)(x+2) = 0 \\\\ & x = -1, -2 \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-3 = 2(x-1)$",
+    choices: ["$x = 0, 2$", "$x = 0, -2$", "$x = 0, 4$", "$x = 0, -4$"],
+    answer: "$x = 0, 4$",
+    process: "\\begin{aligned} & (x-1)^2-3 = 2(x-1) \\\\ & x^2-2x+1-3 = 2x-2 \\\\ & x^2-2x-2 = 2x-2 \\\\ & x^2-4x = 0 \\\\ & x(x-4) = 0 \\\\ & x = 0, 4 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-5 = 0$",
+    choices: ["$x = 2 \\pm \\sqrt{5}$", "$x = -2 \\pm 5$", "$x = -2 \\pm \\sqrt{5}$", "$x = -5 \\pm \\sqrt{2}$"],
+    answer: "$x = -2 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x+2)^2-5 = 0 \\\\ & (x+2)^2 = 5 \\\\ & x+2 = \\pm \\sqrt{5} \\\\ & x = -2 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-1 = 0$",
+    choices: ["$x = 3, 4$", "$x = 4, 5$", "$x = 3, 5$", "$x = -3, -5$"],
+    answer: "$x = 3, 5$",
+    process: "\\begin{aligned} & (x-4)^2-1 = 0 \\\\ & (x-4)^2 = 1 \\\\ & x-4 = \\pm 1 \\\\ & x = 4 \\pm 1 \\\\ & x = 5, 3 \\end{aligned}"
+  },
+  {
+    question: "$x^2-6 = 0$",
+    choices: ["$x = \\pm 3$", "$x = \\pm 6$", "$x = \\pm \\sqrt{6}$", "$x = \\sqrt{6}$"],
+    answer: "$x = \\pm \\sqrt{6}$",
+    process: "\\begin{aligned} & x^2-6 = 0 \\\\ & x^2 = 6 \\\\ & x = \\pm \\sqrt{6} \\end{aligned}"
+  },
+  {
+    question: "$(x+4)^2-1 = 2(x+4)$",
+    choices: ["$x = -3 \\pm \\sqrt{16}$", "$x = 3 \\pm \\sqrt{2}$", "$x = -3 \\pm \\sqrt{2}$", "$x = -3 \\pm 2$"],
+    answer: "$x = -3 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x+4)^2-1 = 2(x+4) \\\\ & x^2+8x+16-1 = 2x+8 \\\\ & x^2+8x+15 = 2x+8 \\\\ & x^2+6x+7 = 0 \\\\ & x = \\frac{-6 \\pm \\sqrt{6^2 - 4(1)(7)}}{2(1)} \\\\ & x = \\frac{-6 \\pm \\sqrt{36-28}}{2} = \\frac{-6 \\pm \\sqrt{8}}{2} \\\\ & x = \\frac{-6 \\pm 2\\sqrt{2}}{2} = -3 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-10 = 3(x-2)$",
+    choices: ["$x = \\frac{5 \\pm \\sqrt{13}}{2}$", "$x = \\frac{-5 \\pm \\sqrt{37}}{2}$", "$x = \\frac{5 \\pm \\sqrt{37}}{2}$", "$x = \\frac{5 \\pm \\sqrt{21}}{2}$"],
+    answer: "$x = \\frac{5 \\pm \\sqrt{37}}{2}$",
+    process: "\\begin{aligned} & (x-1)^2-10 = 3(x-2) \\\\ & x^2-2x+1-10 = 3x-6 \\\\ & x^2-2x-9 = 3x-6 \\\\ & x^2-5x-3 = 0 \\\\ & x = \\frac{-(-5) \\pm \\sqrt{(-5)^2 - 4(1)(-3)}}{2(1)} \\\\ & x = \\frac{5 \\pm \\sqrt{25+12}}{2} \\\\ & x = \\frac{5 \\pm \\sqrt{37}}{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-3 = x$",
+    choices: ["$x = 4, 1$", "$x = -4, 1$", "$x = 4, -1$", "$x = -4, -1$"],
+    answer: "$x = 4, -1$",
+    process: "\\begin{aligned} & (x-1)^2-3 = x \\\\ & x^2-2x+1-3 = x \\\\ & x^2-2x-2 = x \\\\ & x^2-3x-4 = 0 \\\\ & (x-4)(x+1) = 0 \\\\ & x = 4, -1 \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2-2 = 0$",
+    choices: ["$x = 2 \\pm 2$", "$x = -2 \\pm \\sqrt{2}$", "$x = 2 \\pm \\sqrt{2}$", "$x = 2 \\pm 4$"],
+    answer: "$x = 2 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x-2)^2-2 = 0 \\\\ & (x-2)^2 = 2 \\\\ & x-2 = \\pm \\sqrt{2} \\\\ & x = 2 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2-4 = 0$",
+    choices: ["$x = -1, 5$", "$x = 1, 5$", "$x = -1, -5$", "$x = 1, -5$"],
+    answer: "$x = -1, -5$",
+    process: "\\begin{aligned} & (x+3)^2-4 = 0 \\\\ & (x+3)^2 = 4 \\\\ & x+3 = \\pm 2 \\\\ & x = -3 \\pm 2 \\\\ & x = -1, -5 \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-4 = 0$",
+    choices: ["$x = 2, 4$", "$x = 4, 6$", "$x = 2, 6$", "$x = -2, -6$"],
+    answer: "$x = 2, 6$",
+    process: "\\begin{aligned} & (x-4)^2-4 = 0 \\\\ & (x-4)^2 = 4 \\\\ & x-4 = \\pm 2 \\\\ & x = 4 \\pm 2 \\\\ & x = 6, 2 \\end{aligned}"
+  },
+  {
+    question: "$x^2-1 = 0$",
+    choices: ["$x = 1$", "$x = -1$", "$x = \\pm 1$", "$x = 0$"],
+    answer: "$x = \\pm 1$",
+    process: "\\begin{aligned} & x^2-1 = 0 \\\\ & x^2 = 1 \\\\ & x = \\pm 1 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-3 = 3(x+2)$",
+    choices: ["$x = \\frac{1 \\pm \\sqrt{21}}{2}$", "$x = \\frac{-1 \\pm \\sqrt{19}}{2}$", "$x = \\frac{-1 \\pm \\sqrt{21}}{2}$", "$x = \\frac{1 \\pm \\sqrt{19}}{2}$"],
+    answer: "$x = \\frac{-1 \\pm \\sqrt{21}}{2}$",
+    process: "\\begin{aligned} & (x+2)^2-3 = 3(x+2) \\\\ & x^2+4x+4-3 = 3x+6 \\\\ & x^2+4x+1 = 3x+6 \\\\ & x^2+x-5 = 0 \\\\ & x = \\frac{-1 \\pm \\sqrt{1^2 - 4(1)(-5)}}{2(1)} \\\\ & x = \\frac{-1 \\pm \\sqrt{1+20}}{2} \\\\ & x = \\frac{-1 \\pm \\sqrt{21}}{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-7 = 2x$",
+    choices: ["$x = 2 \\pm \\sqrt{40}$", "$x = 4 \\pm \\sqrt{10}$", "$x = 2 \\pm \\sqrt{10}$", "$x = -2 \\pm \\sqrt{10}$"],
+    answer: "$x = 2 \\pm \\sqrt{10}$",
+    process: "\\begin{aligned} & (x-1)^2-7 = 2x \\\\ & x^2-2x+1-7 = 2x \\\\ & x^2-2x-6 = 2x \\\\ & x^2-4x-6 = 0 \\\\ & x = \\frac{-(-4) \\pm \\sqrt{(-4)^2 - 4(1)(-6)}}{2(1)} \\\\ & x = \\frac{4 \\pm \\sqrt{16+24}}{2} = \\frac{4 \\pm \\sqrt{40}}{2} \\\\ & x = \\frac{4 \\pm 2\\sqrt{10}}{2} = 2 \\pm \\sqrt{10} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2-10 = x$",
+    choices: ["$x = \\frac{5 \\pm \\sqrt{29}}{2}$", "$x = \\frac{5 \\pm \\sqrt{21}}{2}$", "$x = \\frac{-5 \\pm \\sqrt{29}}{2}$", "$x = \\frac{-5 \\pm \\sqrt{21}}{2}$"],
+    answer: "$x = \\frac{-5 \\pm \\sqrt{29}}{2}$",
+    process: "\\begin{aligned} & (x+3)^2-10 = x \\\\ & x^2+6x+9-10 = x \\\\ & x^2+6x-1 = x \\\\ & x^2+5x-1 = 0 \\\\ & x = \\frac{-5 \\pm \\sqrt{5^2 - 4(1)(-1)}}{2(1)} \\\\ & x = \\frac{-5 \\pm \\sqrt{25+4}}{2} \\\\ & x = \\frac{-5 \\pm \\sqrt{29}}{2} \\end{aligned}"
+  },
+  {
+    question: "$x^2-10 = 0$",
+    choices: ["$x = \\pm 5$", "$x = \\pm 10$", "$x = \\pm \\sqrt{10}$", "$x = \\sqrt{10}$"],
+    answer: "$x = \\pm \\sqrt{10}$",
+    process: "\\begin{aligned} & x^2-10 = 0 \\\\ & x^2 = 10 \\\\ & x = \\pm \\sqrt{10} \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2+1 = -x$",
+    choices: ["$x = 1, 2$", "$x = -1, 2$", "$x = -1, -2$", "$x = 1, -2$"],
+    answer: "$x = -1, -2$",
+    process: "\\begin{aligned} & (x+1)^2+1 = -x \\\\ & x^2+2x+1+1 = -x \\\\ & x^2+2x+2 = -x \\\\ & x^2+3x+2 = 0 \\\\ & (x+1)(x+2) = 0 \\\\ & x = -1, -2 \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-4 = 0$",
+    choices: ["$x = 1, 3$", "$x = 3, 5$", "$x = 1, 5$", "$x = -1, -5$"],
+    answer: "$x = 1, 5$",
+    process: "\\begin{aligned} & (x-3)^2-4 = 0 \\\\ & (x-3)^2 = 4 \\\\ & x-3 = \\pm 2 \\\\ & x = 3 \\pm 2 \\\\ & x = 5, 1 \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-5 = 0$",
+    choices: ["$x = 3 \\pm 5$", "$x = -3 \\pm \\sqrt{5}$", "$x = 3 \\pm \\sqrt{5}$", "$x = 5 \\pm \\sqrt{3}$"],
+    answer: "$x = 3 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-3)^2-5 = 0 \\\\ & (x-3)^2 = 5 \\\\ & x-3 = \\pm \\sqrt{5} \\\\ & x = 3 \\pm \\sqrt{5} \\end{aligned}"
+  },
+
+  // --- 【4番目が正解の問題】 (25問) ---
+  {
+    question: "$x^2-3 = 0$",
+    choices: ["$x = 3$", "$x = -3$", "$x = \\pm 3$", "$x = \\pm \\sqrt{3}$"],
+    answer: "$x = \\pm \\sqrt{3}$",
+    process: "\\begin{aligned} & x^2-3 = 0 \\\\ & x^2 = 3 \\\\ & x = \\pm \\sqrt{3} \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2-1 = 0$",
+    choices: ["$x = 1, 2$", "$x = 2, 3$", "$x = -1, -3$", "$x = 1, 3$"],
+    answer: "$x = 1, 3$",
+    process: "\\begin{aligned} & (x-2)^2-1 = 0 \\\\ & (x-2)^2 = 1 \\\\ & x-2 = \\pm 1 \\\\ & x = 2 \\pm 1 \\\\ & x = 3, 1 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-3 = x$",
+    choices: ["$x = 1, 2$", "$x = -1, 2$", "$x = 1, -2$", "$x = -1, -2$"],
+    answer: "$x = 1, -2$",
+    process: "\\begin{aligned} & (x+1)^2-3 = x \\\\ & x^2+2x+1-3 = x \\\\ & x^2+2x-2 = x \\\\ & x^2+x-2 = 0 \\\\ & (x+2)(x-1) = 0 \\\\ & x = 1, -2 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-2 = 0$",
+    choices: ["$x = 1 \\pm \\sqrt{2}$", "$x = -1 \\pm 2$", "$x = -2 \\pm \\sqrt{2}$", "$x = -1 \\pm \\sqrt{2}$"],
+    answer: "$x = -1 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x+1)^2-2 = 0 \\\\ & (x+1)^2 = 2 \\\\ & x+1 = \\pm \\sqrt{2} \\\\ & x = -1 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2-9 = 0$",
+    choices: ["$x = 0, 3$", "$x = 0, -3$", "$x = 0, -6$", "$x = 0, 6$"],
+    answer: "$x = 0, 6$",
+    process: "\\begin{aligned} & (x-3)^2-9 = 0 \\\\ & (x-3)^2 = 9 \\\\ & x-3 = \\pm 3 \\\\ & x = 3 \\pm 3 \\\\ & x = 6, 0 \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-9 = 0$",
+    choices: ["$x = 2, 4$", "$x = -2, 4$", "$x = 2, -4$", "$x = -2, -4$"],
+    answer: "$x = 2, -4$",
+    process: "\\begin{aligned} & (x+1)^2-9 = 0 \\\\ & (x+1)^2 = 9 \\\\ & x+1 = \\pm 3 \\\\ & x = -1 \\pm 3 \\\\ & x = 2, -4 \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-5 = 0$",
+    choices: ["$x = 4 \\pm 5$", "$x = -4 \\pm \\sqrt{5}$", "$x = 5 \\pm \\sqrt{4}$", "$x = 4 \\pm \\sqrt{5}$"],
+    answer: "$x = 4 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-4)^2-5 = 0 \\\\ & (x-4)^2 = 5 \\\\ & x-4 = \\pm \\sqrt{5} \\\\ & x = 4 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2 = 2x+2$",
+    choices: ["$x = 2 \\pm 2\\sqrt{5}$", "$x = 4 \\pm \\sqrt{5}$", "$x = -2 \\pm \\sqrt{5}$", "$x = 2 \\pm \\sqrt{5}$"],
+    answer: "$x = 2 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-1)^2 = 2x+2 \\\\ & x^2-2x+1 = 2x+2 \\\\ & x^2-4x-1 = 0 \\\\ & x = \\frac{-(-4) \\pm \\sqrt{(-4)^2 - 4(1)(-1)}}{2(1)} \\\\ & x = \\frac{4 \\pm \\sqrt{16+4}}{2} = \\frac{4 \\pm \\sqrt{20}}{2} \\\\ & x = \\frac{4 \\pm 2\\sqrt{5}}{2} = 2 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2 = 2x+7$",
+    choices: ["$x = -2 \\pm 2\\sqrt{2}$", "$x = 2 \\pm \\sqrt{2}$", "$x = 4 \\pm \\sqrt{2}$", "$x = -2 \\pm \\sqrt{2}$"],
+    answer: "$x = -2 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x+3)^2 = 2x+7 \\\\ & x^2+6x+9 = 2x+7 \\\\ & x^2+4x+2 = 0 \\\\ & x = \\frac{-4 \\pm \\sqrt{4^2 - 4(1)(2)}}{2(1)} \\\\ & x = \\frac{-4 \\pm \\sqrt{16-8}}{2} = \\frac{-4 \\pm \\sqrt{8}}{2} \\\\ & x = \\frac{-4 \\pm 2\\sqrt{2}}{2} = -2 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-1 = 0$",
+    choices: ["$x = 3, 4$", "$x = 4, 5$", "$x = -3, -5$", "$x = 3, 5$"],
+    answer: "$x = 3, 5$",
+    process: "\\begin{aligned} & (x-4)^2-1 = 0 \\\\ & (x-4)^2 = 1 \\\\ & x-4 = \\pm 1 \\\\ & x = 4 \\pm 1 \\\\ & x = 5, 3 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-1 = 0$",
+    choices: ["$x = -1, -2$", "$x = -1, -3$", "$x = 1, 3$", "$x = -1, -3$"],
+    answer: "$x = -1, -3$",
+    process: "\\begin{aligned} & (x+2)^2-1 = 0 \\\\ & (x+2)^2 = 1 \\\\ & x+2 = \\pm 1 \\\\ & x = -2 \\pm 1 \\\\ & x = -1, -3 \\end{aligned}"
+  },
+  {
+    question: "$x^2-5 = 0$",
+    choices: ["$x = 5$", "$x = -5$", "$x = \\pm 5$", "$x = \\pm \\sqrt{5}$"],
+    answer: "$x = \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & x^2-5 = 0 \\\\ & x^2 = 5 \\\\ & x = \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2 = 4x$",
+    choices: ["$x = 3 \\pm \\sqrt{10}$", "$x = 6 \\pm \\sqrt{8}$", "$x = -3 \\pm \\sqrt{8}$", "$x = 3 \\pm 2\\sqrt{2}$"],
+    answer: "$x = 3 \\pm 2\\sqrt{2}$",
+    process: "\\begin{aligned} & (x-1)^2 = 4x \\\\ & x^2-2x+1 = 4x \\\\ & x^2-6x+1 = 0 \\\\ & x = \\frac{-(-6) \\pm \\sqrt{(-6)^2 - 4(1)(1)}}{2(1)} \\\\ & x = \\frac{6 \\pm \\sqrt{36-4}}{2} = \\frac{6 \\pm \\sqrt{32}}{2} \\\\ & x = \\frac{6 \\pm 4\\sqrt{2}}{2} = 3 \\pm 2\\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-3)^2 = 2x+1$",
+    choices: ["$x = 4 \\pm \\sqrt{24}$", "$x = 8 \\pm \\sqrt{32}$", "$x = -4 \\pm 2\\sqrt{2}$", "$x = 4 \\pm 2\\sqrt{2}$"],
+    answer: "$x = 4 \\pm 2\\sqrt{2}$",
+    process: "\\begin{aligned} & (x-3)^2 = 2x+1 \\\\ & x^2-6x+9 = 2x+1 \\\\ & x^2-8x+8 = 0 \\\\ & x = \\frac{-(-8) \\pm \\sqrt{(-8)^2 - 4(1)(8)}}{2(1)} \\\\ & x = \\frac{8 \\pm \\sqrt{64-32}}{2} = \\frac{8 \\pm \\sqrt{32}}{2} \\\\ & x = \\frac{8 \\pm 4\\sqrt{2}}{2} = 4 \\pm 2\\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x+1)^2-1 = 0$",
+    choices: ["$x = 0, 1$", "$x = 0, 2$", "$x = -1, -2$", "$x = 0, -2$"],
+    answer: "$x = 0, -2$",
+    process: "\\begin{aligned} & (x+1)^2-1 = 0 \\\\ & (x+1)^2 = 1 \\\\ & x+1 = \\pm 1 \\\\ & x = -1 \\pm 1 \\\\ & x = 0, -2 \\end{aligned}"
+  },
+  {
+    // ★ 選択肢の重複を修正 (3番目を 2, 6 に変更)
+    question: "$(x-3)^2-3 = x$",
+    choices: ["$x = 1, 3$", "$x = 2, 3$", "$x = 2, 6$", "$x = 1, 6$"],
+    answer: "$x = 1, 6$",
+    process: "\\begin{aligned} & (x-3)^2-3 = x \\\\ & x^2-6x+9-3 = x \\\\ & x^2-6x+6 = x \\\\ & x^2-7x+6 = 0 \\\\ & (x-1)(x-6) = 0 \\\\ & x = 1, 6 \\end{aligned}"
+  },
+  {
+    question: "$(x-2)^2-7 = 2(x-1)$",
+    choices: ["$x = 3 \\pm \\sqrt{37}$", "$x = 6 \\pm \\sqrt{40}$", "$x = -3 \\pm \\sqrt{10}$", "$x = 3 \\pm \\sqrt{10}$"],
+    answer: "$x = 3 \\pm \\sqrt{10}$",
+    process: "\\begin{aligned} & (x-2)^2-7 = 2(x-1) \\\\ & x^2-4x+4-7 = 2x-2 \\\\ & x^2-4x-3 = 2x-2 \\\\ & x^2-6x-1 = 0 \\\\ & x = \\frac{-(-6) \\pm \\sqrt{(-6)^2 - 4(1)(-1)}}{2(1)} \\\\ & x = \\frac{6 \\pm \\sqrt{36+4}}{2} = \\frac{6 \\pm \\sqrt{40}}{2} \\\\ & x = \\frac{6 \\pm 2\\sqrt{10}}{2} = 3 \\pm \\sqrt{10} \\end{aligned}"
+  },
+  {
+    question: "$x^2-8 = 0$",
+    choices: ["$x = \\pm 8$", "$x = \\pm 4\\sqrt{2}$", "$x = \\pm \\sqrt{8}$", "$x = \\pm 2\\sqrt{2}$"],
+    answer: "$x = \\pm 2\\sqrt{2}$",
+    process: "\\begin{aligned} & x^2-8 = 0 \\\\ & x^2 = 8 \\\\ & x = \\pm \\sqrt{8} \\\\ & x = \\pm 2\\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-3 = 0$",
+    choices: ["$x = 1 \\pm 3$", "$x = -1 \\pm \\sqrt{3}$", "$x = 3 \\pm 1$", "$x = 1 \\pm \\sqrt{3}$"],
+    answer: "$x = 1 \\pm \\sqrt{3}$",
+    process: "\\begin{aligned} & (x-1)^2-3 = 0 \\\\ & (x-1)^2 = 3 \\\\ & x-1 = \\pm \\sqrt{3} \\\\ & x = 1 \\pm \\sqrt{3} \\end{aligned}"
+  },
+  {
+    question: "$(x+3)^2-1 = 2(x+3)$",
+    choices: ["$x = -2 \\pm 2$", "$x = -2 \\pm 4$", "$x = 2 \\pm \\sqrt{2}$", "$x = -2 \\pm \\sqrt{2}$"],
+    answer: "$x = -2 \\pm \\sqrt{2}$",
+    process: "\\begin{aligned} & (x+3)^2-1 = 2(x+3) \\\\ & x^2+6x+9-1 = 2x+6 \\\\ & x^2+6x+8 = 2x+6 \\\\ & x^2+4x+2 = 0 \\\\ & x = \\frac{-4 \\pm \\sqrt{4^2 - 4(1)(2)}}{2(1)} \\\\ & x = \\frac{-4 \\pm \\sqrt{8}}{2} = \\frac{-4 \\pm 2\\sqrt{2}}{2} \\\\ & x = -2 \\pm \\sqrt{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-3 = 2(x-4)$",
+    choices: ["$x = 3, 4$", "$x = 4, 7$", "$x = -3, -7$", "$x = 3, 7$"],
+    answer: "$x = 3, 7$",
+    process: "\\begin{aligned} & (x-4)^2-3 = 2(x-4) \\\\ & x^2-8x+16-3 = 2x-8 \\\\ & x^2-8x+13 = 2x-8 \\\\ & x^2-10x+21 = 0 \\\\ & (x-3)(x-7) = 0 \\\\ & x = 3, 7 \\end{aligned}"
+  },
+  {
+    question: "$(x+2)^2-6 = 3(x+2)$",
+    choices: ["$x = \\frac{1 \\pm \\sqrt{33}}{2}$", "$x = \\frac{1 \\pm \\sqrt{31}}{2}$", "$x = \\frac{-1 \\pm \\sqrt{31}}{2}$", "$x = \\frac{-1 \\pm \\sqrt{33}}{2}$"],
+    answer: "$x = \\frac{-1 \\pm \\sqrt{33}}{2}$",
+    process: "\\begin{aligned} & (x+2)^2-6 = 3(x+2) \\\\ & x^2+4x+4-6 = 3x+6 \\\\ & x^2+4x-2 = 3x+6 \\\\ & x^2+x-8 = 0 \\\\ & x = \\frac{-1 \\pm \\sqrt{1^2 - 4(1)(-8)}}{2(1)} \\\\ & x = \\frac{-1 \\pm \\sqrt{1+32}}{2} \\\\ & x = \\frac{-1 \\pm \\sqrt{33}}{2} \\end{aligned}"
+  },
+  {
+    question: "$(x-1)^2-1 = 4(x-1)$",
+    choices: ["$x = 3 \\pm \\sqrt{13}$", "$x = 3 \\pm \\sqrt{6}$", "$x = -3 \\pm \\sqrt{5}$", "$x = 3 \\pm \\sqrt{5}$"],
+    answer: "$x = 3 \\pm \\sqrt{5}$",
+    process: "\\begin{aligned} & (x-1)^2-1 = 4(x-1) \\\\ & x^2-2x+1-1 = 4x-4 \\\\ & x^2-2x = 4x-4 \\\\ & x^2-6x+4 = 0 \\\\ & x = \\frac{-(-6) \\pm \\sqrt{(-6)^2 - 4(1)(4)}}{2(1)} \\\\ & x = \\frac{6 \\pm \\sqrt{36-16}}{2} = \\frac{6 \\pm \\sqrt{20}}{2} \\\\ & x = \\frac{6 \\pm 2\\sqrt{5}}{2} = 3 \\pm \\sqrt{5} \\end{aligned}"
+  },
+  {
+    question: "$(x+4)^2-1 = 0$",
+    choices: ["$x = -3, 5$", "$x = 3, 5$", "$x = -3, -4$", "$x = -3, -5$"],
+    answer: "$x = -3, -5$",
+    process: "\\begin{aligned} & (x+4)^2-1 = 0 \\\\ & (x+4)^2 = 1 \\\\ & x+4 = \\pm 1 \\\\ & x = -4 \\pm 1 \\\\ & x = -3, -5 \\end{aligned}"
+  },
+  {
+    question: "$(x-4)^2-9 = 0$",
+    choices: ["$x = 1, 4$", "$x = 4, 7$", "$x = -1, -7$", "$x = 1, 7$"],
+    answer: "$x = 1, 7$",
+    process: "\\begin{aligned} & (x-4)^2-9 = 0 \\\\ & (x-4)^2 = 9 \\\\ & x-4 = \\pm 3 \\\\ & x = 4 \\pm 3 \\\\ & x = 7, 1 \\end{aligned}"
+  }
+];
+
+        // ===== グローバル変数定義 =====
+        const modeSelectionScreen = document.getElementById('mode-selection');
+        const quizMainScreen = document.getElementById('quiz-main');
+        const musouBackground = document.getElementById('musou-background');
+
+        const questionArea = document.getElementById('question-area');
+        const nextButton = document.getElementById('next-btn');
+        const resultsArea = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
+        const timerBar = document.getElementById('timer-bar');
+        const timerText = document.getElementById('timer-text');
+        
+        let selectedQuizData;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentMode = 'normal'; // 現在のモードを保存
+        
+        let timerInterval;
+        let timeLeft;
+        let TIME_LIMIT;
+        let WARNING_TIME;
+        
+        let totalSolveTime = 0;
+        let questionStartTime;
+
+        let currentRankSettings = {}; // ランク判定基準を保存
+
+        // ===== モード選択とクイズ開始の処理 =====
+        document.getElementById('normal-mode-btn').addEventListener('click', () => {
+            startGame({
+                mode: 'normal',
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 15,     // ノーマル 制限時間 (例)
+                warningTime: 5,      // ノーマル 警告時間 (例)
+                isMusou: false,
+                sRankTime: 40,  // Sランク基準 (例: 40秒)
+                aRankTime: 60,  // Aランク基準 (例: 60秒)
+                bRankTime: 90   // Bランク基準 (例: 90秒)
+            });
+        });
+
+        document.getElementById('musou-mode-btn').addEventListener('click', () => {
+            startGame({
+                mode: 'musou',
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 7,      // 無双 制限時間 (例)
+                warningTime: 3,      // 無双 警告時間 (例)
+                isMusou: true,
+                sRankTime: 30,  // Sランク基準 (例: 30秒)
+                aRankTime: 45,  // Aランク基準 (例: 45秒)
+                bRankTime: 60   // Bランク基準 (例: 60秒)
+            });
+        });
+
+        function startGame(settings) {
+            currentMode = settings.mode; 
+            TIME_LIMIT = settings.timeLimit;
+            WARNING_TIME = settings.warningTime;
+            
+            currentRankSettings = {
+                sRankTime: settings.sRankTime,
+                aRankTime: settings.aRankTime,
+                bRankTime: settings.bRankTime
+            };
+
+            if (settings.isMusou) {
+                musouBackground.classList.remove('hidden');
+            }
+
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            const shuffledData = shuffleArray(fullQuizDataBank);
+            selectedQuizData = shuffledData.slice(0, 10);
+
+            modeSelectionScreen.classList.add('hidden');
+            quizMainScreen.classList.remove('hidden');
+
+            showQuestion();
+        }
+
+
+        // ===== タイマー関数 =====
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('warning');
+            document.body.classList.remove('timer-warning');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+
+                if (timeLeft <= WARNING_TIME) {
+                    timerBar.classList.add('warning');
+                    document.body.classList.add('timer-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function timeUp() {
+            stopTimer();
+            totalSolveTime += TIME_LIMIT;
+
+            const choicesContainer = questionArea.querySelector('.choices');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
+
+            if(choicesContainer) {
+                choicesContainer.classList.add('answered');
+            }
+
+            feedbackMessage.textContent = "時間切れ💦";
+            feedbackMessage.classList.add('incorrect-feedback');
+            feedbackMessage.classList.remove('hidden');
+
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            processDisplay.classList.remove('hidden');
+
+            Array.from(choicesContainer.children).forEach(child => {
+                const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
+                if (choiceText === correctAnswer) {
+                     child.classList.add('correct');
+                }
+            });
+
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
+        function showQuestion() {
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+
+            // 選択肢のHTMLを生成（onclick属性には $ を除去したものを渡す）
+            const choicesHtml = currentQuestion.choices.map(choice => {
+                const onclickChoice = choice.replace(/\$/g, ''); // $ 除去
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+            }).join('');
+
+            // 問題エリアのHTMLを設定
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+
+            // ★ 問題文の KaTeX レンダリング ($ 除去) ★
+            const problemTextElement = document.getElementById('problem-text');
+            // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
+            let questionKatexString = currentQuestion.question;
+            if (questionKatexString.startsWith('$') && questionKatexString.endsWith('$')) {
+                 questionKatexString = questionKatexString.slice(1, -1); 
+            } else {
+                 console.warn("Question text might be missing $ delimiters:", currentQuestion.question);
+            }
+
+            try {
+                katex.render(questionKatexString, problemTextElement, {
+                    throwOnError: true, // エラーがあればコンソールに出力
+                    displayMode: true  // 問題文は中央揃えのディスプレイモード
+                });
+            } catch (e) {
+                 // KaTeXレンダリングエラー時のフォールバック
+                 console.error("KaTeX render error on question:", currentQuestion.question, e);
+                 problemTextElement.textContent = currentQuestion.question; // 元のテキストを表示
+            }
+
+            // ★ 選択肢の KaTeX レンダリング ($ 除去) ★
+            const choiceElements = questionArea.querySelectorAll('.choice');
+            choiceElements.forEach(element => {
+                const originalText = element.textContent; // 元の $付きテキストを取得
+                 // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
+                let katexString = originalText;
+                 if (katexString.startsWith('$') && katexString.endsWith('$')) {
+                     katexString = katexString.slice(1, -1); 
+                 } else {
+                     console.warn("Choice text might be missing $ delimiters:", originalText);
+                 }
+                
+                try {
+                    // 要素の中身をKaTeXでレンダリング（元のテキストは上書きされる）
+                    katex.render(katexString, element, {
+                        throwOnError: true, // エラーがあればコンソールに出力
+                        displayMode: false // 選択肢はインラインモード
+                    });
+                } catch (e) {
+                    // KaTeXレンダリングエラー時のフォールバック
+                    console.error("KaTeX render error on choice:", originalText, e);
+                    // エラーの場合は元のテキストのままにする（innerHTMLを上書きしない）
+                }
+            });
+
+            // タイマー開始
+            questionStartTime = Date.now();
+            startTimer();
+        }
+
+        function selectAnswer(element, selectedChoice) {
+            stopTimer();
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            totalSolveTime += timeTaken;
+
+            const choicesContainer = element.parentElement;
+            if (choicesContainer.classList.contains('answered')) return;
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
+
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) { 
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                 // 正解の選択肢をハイライト
+                Array.from(choicesContainer.children).forEach(child => {
+                    const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning');
+            if (currentQuestionIndex < selectedQuizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden');
+            
+            const finalScore = score * 10;
+            const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime);
+
+            let rank = '';
+            let rankColor = '';
+            let rankName = '';
+
+            if (totalSeconds <= currentRankSettings.sRankTime) {
+                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
+                rankName = 'S';
+            } else if (totalSeconds <= currentRankSettings.aRankTime) {
+                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
+                rankName = 'A';
+            } else if (totalSeconds <= currentRankSettings.bRankTime) {
+                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+                rankName = 'B';
+            } else {
+                rank = '💪 Cランク 💪'; rankColor = '#28a745';
+                rankName = 'C';
+            }
+            
+            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
+            
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
+            const thisTestId = "test10"; // 例: test4 なら "test4", test5 なら "test5"
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+            // ★ 5. 履歴キー（ファイルごとに変える） ★
+            const historyKey = 'algebraHistory'; // ★「文字式」用のキー
+
+            // --- 達成状況の保存ロジック ---
+            let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+            const currentBest = achievements[thisTestId]; 
+            
+            let newLevel = ''; // このラウンドで達成したレベル
+            let shouldUpdate = false; // 保存を更新すべきか
+            let trophyMessage = ''; // ★ 表示するメッセージ用変数を追加
+
+            // 1. 満点かどうかをまず確認
+            if (finalScore === totalPoints) {
+                
+                // 2. 満点の場合、ランクを確認
+                if (rankName === 'S' || rankName === 'A') {
+                    newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
+                } else {
+                    newLevel = 'apple';
+                }
+
+                // 3. 達成状況を更新 (格下げはしない)
+                if (newLevel === 'musou') {
+                    shouldUpdate = true;
+                } else if (newLevel === 'normal' && (currentBest !== 'musou')) {
+                    shouldUpdate = true;
+                } else if (newLevel === 'apple' && (currentBest !== 'musou' && currentBest !== 'normal')) {
+                    shouldUpdate = true;
+                }
+
+                if (shouldUpdate) {
+                    achievements[thisTestId] = newLevel;
+                    localStorage.setItem('quizAchievements', JSON.stringify(achievements));
+                    
+                    // ★ メッセージをセット ★
+                    if (newLevel === 'musou') {
+                        trophyMessage = '👑をゲットしました！';
+                    } else if (newLevel === 'normal') {
+                        trophyMessage = '⭐をゲットしました！';
+                    } else if (newLevel === 'apple') {
+                        trophyMessage = '🍎をゲットしました！';
+                    }
+                }
+            }
+            // --- 達成状況の保存ロジックここまで ---
+            
+            // --- 履歴保存処理 ---
+             const newResult = {
+                score: finalScore,
+                totalPoints: totalPoints,
+                time: totalSeconds,
+                rank: rankName, 
+                date: new Date().toLocaleString('ja-JP') 
+            };
+            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+            history.unshift(newResult);
+            localStorage.setItem(historyKey, JSON.stringify(history)); 
+            // --- 保存処理ここまで ---
+
+            resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+            const trophyDisplay = document.getElementById('trophy-message'); // ★ 追加
+
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank; 
+            rankInfoDisplay.style.color = rankColor;
+            trophyDisplay.textContent = trophyMessage; // ★ 追加
+        }
+        
+    </script>
+
+</body>
+</html>
