@@ -8,6 +8,7 @@
     
     <link rel="stylesheet" href="./katex/katex.min.css">
     <script defer src="./katex/katex.min.js"></script>
+    <script defer src="./katex/contrib/auto-render.min.js"></script>
 
     <style>
         /* ページの基本スタイル */
@@ -1054,6 +1055,10 @@ const fullQuizDataBank = [
             questionStartTime = Date.now();
             startTimer();
         }
+
+        // ★★★ auto-render.min.js を読み込む script タグを追加 ★★★
+        // HTML の <head> 内、katex.min.js の下あたりに追加してください。
+        // <script defer src="./katex/contrib/auto-render.min.js"></script>
 
         // ★★★ auto-render.min.js を読み込む script タグを追加 ★★★
         // HTML の <head> 内、katex.min.js の下あたりに追加してください。
