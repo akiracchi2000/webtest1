@@ -982,52 +982,57 @@ const fullQuizDataBank = [
 
         // ===== クイズ本体の関数 (renderMathInElement を使うバージョン) =====
         function showQuestion() {
-            // QDが空またはインデックス範囲外ならエラー処理 (以前と同じ)
+            // QDが空またはインデックス範囲外ならエラー処理
             if (!fullQuizDataBank || currentQuestionIndex >= fullQuizDataBank.length) {
                  console.error("Invalid question index or fullQuizDataBank is empty.");
-                 // エラー表示処理... (省略)
+                 // 実際のHTML要素に合わせてエラー表示
+                 const questionTextEl = document.getElementById('problem-text'); // ★ ID確認
+                 if (questionTextEl) {
+                     questionTextEl.innerHTML = "エラー: 問題データの読み込みに失敗しました。";
+                 }
                  return;
              }
 
-            // UIリセット (以前と同じ)
-             feedbackEl.style.display = 'none'; // ★ feedbackEl は selectAnswer で使うので追加
-             nextBtn.style.display = 'none';    // ★ nextBtn も selectAnswer で使うので追加
-             resultsBtn.style.display = 'none'; // ★ resultsBtn も selectAnswer で使うので追加
-             optionsContainer.innerHTML = '';   // ★ optionsContainer を使うように修正
+            // UIリセット (存在しない要素への参照を削除)
+             // feedbackEl.style.display = 'none'; // feedbackEl は存在しない可能性
+             // nextBtn.style.display = 'none';    // nextButton を使う
+             // resultsBtn.style.display = 'none'; // nextButton を使う (innerTextで切り替え)
+             nextButton.style.display = 'none'; // nextButton (ID: next-btn) を隠す
+             optionsContainer.innerHTML = '';   // optionsContainer をクリア
 
-            const currentQuestion = selectedQuizData[currentQuestionIndex]; // ★ selectedQuizData を使うように修正
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
 
-            // 問題番号と問題文を設定
-             // ★ questionNumberEl がないので、必要ならHTMLに追加してください。なければこの行は削除
-             // questionNumberEl.textContent = `問題 ${currentQuestionIndex + 1} / ${selectedQuizData.length}`;
-             questionTextEl.innerHTML = currentQuestion.question || "(問題文がありません)"; // ★ questionTextEl を使うように修正
-
-            // ★ レイアウト処理は削除 (今回は不要) ★
-            // optionsContainer.classList.remove('options-vertical');
+            // 問題文要素を取得 (ID確認)
+            const questionTextEl = document.getElementById('problem-text');
+            if (!questionTextEl) {
+                console.error("Element with ID 'problem-text' not found.");
+                return; // 要素がなければ処理中断
+            }
+            questionTextEl.innerHTML = currentQuestion.question || "(問題文がありません)";
 
             // 選択肢ボックスを作成 (シャッフル対応済み)
             if (currentQuestion.choices && Array.isArray(currentQuestion.choices)) {
-                 // ★ 選択肢のシャッフル処理 (以前と同じ) ★
                  const shuffledOptions = [...currentQuestion.choices];
                  for (let i = shuffledOptions.length - 1; i > 0; i--) {
                      const j = Math.floor(Math.random() * (i + 1));
                      [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
                  }
 
-                // シャッフルされた配列を元にボックスを作成
                 shuffledOptions.forEach(optionText => {
                     const optionBox = document.createElement('div');
-                    optionBox.innerHTML = optionText || "(選択肢テキストなし)"; // ★ innerHTML を使う
-                    optionBox.classList.add('choice'); // ★ クラス名を 'choice' に修正
-                    optionBox.dataset.optionValue = optionText; // ★ dataset を使うように修正 (答え合わせ用)
+                    optionBox.innerHTML = optionText || "(選択肢テキストなし)";
+                    optionBox.classList.add('choice');
+                    // ★ datasetではなく、元のテキストを直接onclickの引数にする (selectAnswerの引数に合わせる) ★
+                    // optionBox.dataset.optionValue = optionText;
 
                     optionBox.addEventListener('click', () => {
-                         // ★ feedbackMessage ではなく feedbackEl を使う (存在する場合) ★
-                         // if (feedbackEl && feedbackEl.style.display === 'block') { return; }
+                        // ★ feedbackMessage への参照を削除 ★
+                        // const feedbackMessage = document.getElementById('feedback-message');
+                        // if (feedbackMessage && !feedbackMessage.classList.contains('hidden')) { return; }
 
-                         // ★ selectAnswer の引数を修正 ★
-                         // 元のテキスト(optionText)と正解(currentQuestion.answer)を渡す
-                         selectAnswer(optionBox, optionText, currentQuestion.answer, currentQuestion.process); // ★ process を解説として渡す
+                        // ★ selectAnswer の引数を修正: $を除去した値を渡す ★
+                        const selectedValue = optionText.replace(/\$/g, '');
+                        selectAnswer(optionBox, selectedValue); // ★ 第2引数を $除去したものに変更 ★
                     });
                     optionsContainer.appendChild(optionBox);
                 });
@@ -1037,71 +1042,114 @@ const fullQuizDataBank = [
 
             // ★★★ KaTeXの auto-render を呼び出す ★★★
             try {
-                // KaTeXが認識する区切り文字 (必要なら調整)
                 const katexDelimiters = [
                     {left: '$$', right: '$$', display: true},
                     {left: '$', right: '$', display: false},
                     {left: '\\(', right: '\\)', display: false},
                     {left: '\\[', right: '\\]', display: true}
                 ];
-                // 問題文と選択肢コンテナ全体に auto-render を適用
-                renderMathInElement(questionTextEl, { delimiters: katexDelimitors }); // ★ questionTextEl を指定
-                renderMathInElement(optionsContainer, { delimiters: katexDelimitors });
+                renderMathInElement(questionTextEl, { delimiters: katexDelimiters });
+                renderMathInElement(optionsContainer, { delimiters: katexDelimiters });
             } catch (e) {
                 console.error("Error rendering KaTeX for question/options:", e);
             }
 
-            // タイマー開始 (変更なし)
+            // タイマー開始
             questionStartTime = Date.now();
             startTimer();
         }
 
-        function selectAnswer(element, selectedChoice) {
-            stopTimer();
-            const timeTaken = (Date.now() - questionStartTime) / 1000;
-            totalSolveTime += timeTaken;
+        function selectAnswer(element, selectedChoice) { // ★ 引数を修正 ★
+             stopTimer();
+             const timeTaken = (Date.now() - questionStartTime) / 1000;
+             totalSolveTime += timeTaken;
 
-            const choicesContainer = element.parentElement;
-            if (choicesContainer.classList.contains('answered')) return;
-            choicesContainer.classList.add('answered');
+             const choicesContainer = element.parentElement;
+             if (choicesContainer.classList.contains('answered')) return;
+             choicesContainer.classList.add('answered');
 
-            const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
+             const currentQuestion = selectedQuizData[currentQuestionIndex];
+             const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
 
-            const feedbackMessage = document.getElementById('feedback-message');
-            const processDisplay = document.getElementById('calculation-process');
+             // ★★★ feedbackMessage と processDisplay のIDを持つ要素を取得 ★★★
+             // これらは feedback-area の中にあります
+             const feedbackMessage = document.getElementById('feedback-message');
+             const processDisplay = document.getElementById('calculation-process');
 
-            if (selectedChoice === correctAnswer) { 
-                score++;
-                element.classList.add('correct');
-                feedbackMessage.textContent = "正解💐";
-                feedbackMessage.classList.add('correct-feedback');
-            } else {
-                element.classList.add('incorrect');
-                feedbackMessage.textContent = "不正解💦";
-                feedbackMessage.classList.add('incorrect-feedback');
-                
-                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
-                processDisplay.classList.remove('hidden');
+             // ★★★ 要素が存在するか確認 ★★★
+             if (!feedbackMessage || !processDisplay) {
+                 console.error("Required feedback elements ('feedback-message' or 'calculation-process') not found.");
+                 // ボタン表示だけ行うなど、最低限の処理
+                 if (currentQuestionIndex < selectedQuizData.length - 1) {
+                     nextButton.innerText = "次の問題へ";
+                 } else {
+                     nextButton.innerText = "結果を見る";
+                 }
+                 nextButton.classList.remove('hidden');
+                 return;
+             }
+             // ★★★ --- 確認ここまで --- ★★★
+
+
+             if (selectedChoice === correctAnswer) {
+                 score++;
+                 element.classList.add('correct');
+                 feedbackMessage.textContent = "正解💐";
+                 feedbackMessage.classList.add('correct-feedback');
+                 // 正解時は processDisplay を隠したままにする（もしくは空にする）
+                 processDisplay.classList.add('hidden');
+                 processDisplay.innerHTML = ''; // 中身もクリア
+             } else {
+                 element.classList.add('incorrect');
+                 feedbackMessage.textContent = "不正解💦";
+                 feedbackMessage.classList.add('incorrect-feedback');
+
+                 // 不正解時に計算過程を表示 (processDisplay を使う)
+                 processDisplay.innerHTML = ''; // まず中身をクリア
+                 try {
+                     katex.render(currentQuestion.process, processDisplay, {
+                        throwOnError: false,
+                        displayMode: true
+                     });
+                     // ★ 解説にも auto-render を適用する場合 (aタグなどを活かす場合)
+                     // processDisplay.innerHTML = currentQuestion.process; // HTMLとして解釈させる
+                     // renderMathInElement(processDisplay, { delimiters: katexDelimiters }); // その後KaTeX適用
+                 } catch(e) {
+                     console.error("Error rendering KaTeX for process:", e);
+                     processDisplay.textContent = currentQuestion.process; // エラー時はテキスト表示
+                 }
+                 processDisplay.classList.remove('hidden'); // 表示する
+
 
                  // 正解の選択肢をハイライト
-                Array.from(choicesContainer.children).forEach(child => {
-                    const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
-                    if (choiceText === correctAnswer) {
-                         child.classList.add('correct');
+                 Array.from(choicesContainer.children).forEach(child => {
+                    // ★ 元の $ 付きテキストと比較する必要がある場合 ★
+                    // datasetがないため、textContentから再構成するか、$なしで比較するか判断が必要
+                    // ここでは $ なしで比較
+                    const choiceFullText = child.innerHTML; // KaTeX適用後のHTMLが入っている可能性
+                    let choiceValue = child.textContent; // 見えているテキストを取得
+                    // クリックイベント設定時と同様の $ 除去処理 (念のため)
+                    if(choiceFullText.includes('$')){ // 元々 $ があった選択肢か簡易判定
+                         // 複雑になるため、textContent ($なし) で比較する方針とする
                     }
-                });
-            }
-            
-            feedbackMessage.classList.remove('hidden');
-            
-            if (currentQuestionIndex < selectedQuizData.length - 1) {
-                nextButton.innerText = "次の問題へ";
-            } else {
-                nextButton.innerText = "結果を見る";
-            }
-            nextButton.classList.remove('hidden');
-        }
+
+
+                     if (choiceValue === correctAnswer) { // $ なし同士で比較
+                          child.classList.add('correct');
+                     }
+                 });
+             }
+
+             feedbackMessage.classList.remove('hidden'); // メッセージを表示
+
+             // 次へ/結果ボタン表示
+             if (currentQuestionIndex < selectedQuizData.length - 1) {
+                 nextButton.innerText = "次の問題へ";
+             } else {
+                 nextButton.innerText = "結果を見る";
+             }
+             nextButton.classList.remove('hidden');
+         }
 
         nextButton.addEventListener('click', () => {
             currentQuestionIndex++;
