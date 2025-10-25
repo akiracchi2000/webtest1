@@ -401,7 +401,7 @@ const fullQuizDataBank = [
             feedbackMessage.classList.add('incorrect-feedback');
             feedbackMessage.classList.remove('hidden');
 
-            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
             processDisplay.classList.remove('hidden');
 
             Array.from(choicesContainer.children).forEach(child => {
@@ -490,7 +490,7 @@ function showQuestion() {
   processDisplay.innerHTML = '';
   if (isPureMathBlock(proc)) {
     try {
-      katex.render(proc, processDisplay, { throwOnError: false, displayMode: true });
+      katex.render(proc, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
     } catch {
       processDisplay.textContent = proc;
       renderInlineMathIn(processDisplay);
@@ -530,7 +530,7 @@ function showQuestion() {
                 feedbackMessage.textContent = "不正解💦";
                 feedbackMessage.classList.add('incorrect-feedback');
                 
-                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
                 processDisplay.classList.remove('hidden');
 
                  // 正解の選択肢をハイライト
