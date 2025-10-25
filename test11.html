@@ -1,676 +1,527 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>計算テスト (テンプレートA)</title>
-    
-    <link rel="stylesheet" href="./katex/katex.min.css">
-    <script defer src="./katex/katex.min.js"></script>
-　　<script defer src="./katex/contrib/auto-render.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-    <style>
-        /* ページの基本スタイル */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f4f7f6;
-            transition: background-color 0.5s ease;
-        }
-        
-        body.timer-warning {
-            background-color: #ffebee;
-        }
+  <title>計算テスト (テンプレートA)</title>
 
-        /* ===== モード選択画面のスタイル ===== */
-        #mode-selection {
-            text-align: center;
-            background: #fff;
-            padding: 3em;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-        }
-        #mode-selection h1 {
-            color: #2c3e50;
-            margin-top: 0;
-        }
-        .mode-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 1em;
-        }
-        .mode-btn {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            color: #fff;
-            font-weight: bold;
-        }
-        .mode-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        #normal-mode-btn {
-            background-color: #3498db;
-        }
-        #musou-mode-btn {
-            background-color: #c0392b;
-        }
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="./katex/katex.min.css" />
+  <script defer src="./katex/katex.min.js"></script>
+  <script defer src="./katex/contrib/auto-render.min.js"></script>
 
-        /* ===== 無双モード用の背景画像 ===== */
-        #musou-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image: url('./hannya.png'); /* 画像パス */
-            background-repeat: repeat;
-            background-size: 100px; 
-            background-position: center;
-            opacity: 0.15;
-            z-index: -1;
-        }
+  <style>
+    /* ページの基本スタイル */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f4f7f6;
+      transition: background-color 0.5s ease;
+    }
+    body.timer-warning { background-color: #ffebee; }
 
-        /* クイズ全体のコンテナ */
-        .quiz-container {
-            max-width: 600px;
-            width: 90%;
-            background: #fff;
-            padding: 2em;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-        }
+    /* ===== モード選択画面のスタイル ===== */
+    #mode-selection {
+      text-align: center;
+      background: #fff;
+      padding: 3em;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+    #mode-selection h1 { color: #2c3e50; margin-top: 0; }
+    .mode-buttons { display: flex; flex-direction: column; gap: 1em; }
+    .mode-btn {
+      padding: 15px 30px; font-size: 1.2em; border: none; border-radius: 8px;
+      cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; color: #fff; font-weight: bold;
+    }
+    .mode-btn:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    #normal-mode-btn { background-color: #3498db; }
+    #musou-mode-btn  { background-color: #c0392b; }
 
-        .timer-container {
-            position: relative;
-            width: 100%;
-            height: 25px;
-            background-color: #e9ecef;
-            border-radius: 15px;
-            margin-bottom: 1.5em;
-            overflow: hidden;
-        }
-        .timer-bar {
-            height: 100%;
-            width: 100%;
-            background-color: #3498db;
-            border-radius: 15px;
-            transition: width 1s linear, background-color 0.5s ease;
-        }
-        .timer-bar.warning {
-            background-color: #dc3545;
-        }
-        .timer-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-weight: bold;
-        }
+    /* ===== 無双モード用の背景画像 ===== */
+    #musou-background {
+      position: fixed; inset: 0;
+      background-image: url('./hannya.png'); background-repeat: repeat;
+      background-size: 100px; background-position: center; opacity: 0.15; z-index: -1;
+    }
 
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-            margin: 0 0 1em 0;
-        }
+    /* クイズ全体のコンテナ */
+    .quiz-container {
+      max-width: 600px; width: 90%; background: #fff; padding: 2em; border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
 
-        .problem-text { font-size: 1.7em; margin-bottom: 1em; text-align: center; min-height: 50px; }
-          .problem-text { 
-    overflow-x: auto; 
-    -webkit-overflow-scrolling: touch; /* モバイルで滑らかスクロール */
-  }
-        /* --- スマホではみ出す数式対策（①）--- */
+    .timer-container {
+      position: relative; width: 100%; height: 25px; background-color: #e9ecef;
+      border-radius: 15px; margin-bottom: 1.5em; overflow: hidden;
+    }
+    .timer-bar { height: 100%; width: 100%; background-color: #3498db; border-radius: 15px; transition: width 1s linear, background-color 0.5s ease; }
+    .timer-bar.warning { background-color: #dc3545; }
+    .timer-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-weight: bold; }
 
-/* 1) 横スクロールを許可 */
-.problem-text,
-.calculation-process,
-.katex-display {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
+    h1 {
+      color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db;
+      padding-bottom: 10px; margin: 0 0 1em 0;
+    }
 
-/* 2) 数式要素が親幅を超えないようにする */
-.katex-display > .katex {
-  display: inline-block;
-  max-width: 100%;
-}
+    /* 問題文 */
+    .problem-text {
+      font-size: 1.7em;
+      margin-bottom: 1em;
+      text-align: center;
+      min-height: 50px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
-/* 3) スマホ時に少し縮める（任意） */
-@media (max-width: 640px) {
-  .problem-text { font-size: clamp(18px, 6vw, 28px); }
-  .choices .choice { font-size: clamp(14px, 4.2vw, 18px); }
-}
+    /* スマホではみ出す数式対策（横スクロール＆最大幅） */
+    .problem-text,
+    .calculation-process,
+    .katex-display {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .katex-display > .katex {
+      display: inline-block;
+      max-width: 100%;
+    }
+    @media (max-width: 640px) {
+      .problem-text { font-size: clamp(18px, 6vw, 28px); }
+      .choices .choice { font-size: clamp(14px, 4.2vw, 18px); }
+    }
 
-        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
-        .choice:hover { background-color: #d1d9e0; }
-        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
-        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
-        .choices.answered { pointer-events: none; }
-        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
-        .feedback-area { margin-top: 1.5em; min-height: 150px; }
-        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
-        .feedback-message.correct-feedback { color: #28a745; }
-        .feedback-message.incorrect-feedback { color: #dc3545; }
-        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
-        .katex-display { text-align: left !important; }
-        .controls { text-align: center; margin-top: 1em; height: 50px; }
-        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
-        #next-btn:hover { background-color: #2980b9; }
-        
-        #results { text-align: center; }
-        #results h2 { color: #2c3e50; }
-        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
-        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
-        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
-        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
-        .trophy-message {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #e74c3c; /* 🍎の色に合わせました */
-            margin: 0.5em 0;
-            min-height: 1.2em; /* メッセージが無い時にレイアウトが崩れないように */
-        }
-        
-        .hidden { display: none; }
-        
-        /* ===== トップへ戻るボタンのスタイル ===== */
-        .home-btn {
-            display: inline-block;
-            margin-top: 1.5em;
-            padding: 10px 25px;
-            font-size: 1em;
-            text-decoration: none;
-            color: #fff;
-            background-color: #6c757d;
-            border-radius: 5px;
-            transition: background-color 0.2s;
-        }
-        .home-btn:hover {
-            background-color: #5a6268;
-        }
-    </style>
+    /* 選択肢 */
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .choice {
+      display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center;
+      cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em;
+    }
+    .choice:hover { background-color: #d1d9e0; }
+    .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+    .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+    .choices.answered { pointer-events: none; }
+    .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+
+    /* フィードバック＆解説 */
+    .feedback-area { margin-top: 1.5em; min-height: 150px; }
+    .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
+    .feedback-message.correct-feedback { color: #28a745; }
+    .feedback-message.incorrect-feedback { color: #dc3545; }
+    .calculation-process {
+      background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d;
+      text-align: left; /* 解説ブロックは左寄せ */
+    }
+    .calculation-process .katex-display { text-align: left !important; }
+    .calculation-process .katex-display > .katex { display: inline-block; max-width: 100%; }
+
+    .controls { text-align: center; margin-top: 1em; height: 50px; }
+    #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+    #next-btn:hover { background-color: #2980b9; }
+
+    /* 結果 */
+    #results { text-align: center; }
+    #results h2 { color: #2c3e50; }
+    #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+    #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+    #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
+    #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em; }
+    .trophy-message { font-size: 1.8em; font-weight: bold; color: #e74c3c; margin: 0.5em 0; min-height: 1.2em; }
+
+    .hidden { display: none; }
+
+    /* トップへ戻る */
+    .home-btn {
+      display: inline-block; margin-top: 1.5em; padding: 10px 25px; font-size: 1em; text-decoration: none;
+      color: #fff; background-color: #6c757d; border-radius: 5px; transition: background-color 0.2s;
+    }
+    .home-btn:hover { background-color: #5a6268; }
+  </style>
 </head>
 <body>
 
-    <div id="mode-selection">
-        <h1>モードを選択</h1>
-        <div class="mode-buttons">
-            <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
-            <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
-            </div>
-        <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
+  <div id="mode-selection">
+    <h1>モードを選択</h1>
+    <div class="mode-buttons">
+      <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
+      <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
+    </div>
+    <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
+  </div>
+
+  <div class="quiz-container hidden" id="quiz-main">
+    <div class="timer-container">
+      <div class="timer-bar" id="timer-bar"></div>
+      <span class="timer-text" id="timer-text"></span>
     </div>
 
-    <div class="quiz-container hidden" id="quiz-main">
-        <div class="timer-container">
-            <div class="timer-bar" id="timer-bar"></div>
-            <span class="timer-text" id="timer-text"></span>
-        </div>
-        
-        <h1>比例と反比例 (初級)</h1>
-        <div id="question-area"></div>
-        
-        <div id="results" class="hidden">
-            <h2>テスト終了！</h2>
-            <p id="score"></p>
-            <p id="time-info"></p>
-            <p id="rank-info"></p>
-            <p id="trophy-message" class="trophy-message"></p> <p class="sub-message">お疲れ様でした！</p>
-            <a href="./index.html" class="home-btn">トップページに戻る</a>
-        </div>
-        
-        <div class="controls">
-            <button id="next-btn" class="hidden">次の問題へ</button>
-        </div>
+    <h1>比例と反比例 (初級)</h1>
+    <div id="question-area"></div>
+
+    <div id="results" class="hidden">
+      <h2>テスト終了！</h2>
+      <p id="score"></p>
+      <p id="time-info"></p>
+      <p id="rank-info"></p>
+      <p id="trophy-message" class="trophy-message"></p>
+      <p class="sub-message">お疲れ様でした！</p>
+      <a href="./index.html" class="home-btn">トップページに戻る</a>
     </div>
 
-    <div id="musou-background" class="hidden"></div>
-
-
-    <script>
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        // ★ 
-        // ★  const fullQuizDataBank = [ ... ];
-        // ★  (↑ ここに $ を含む100問のデータバンクを貼り付け)
-        // ★ 
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-// ===== 全100問の問題データバンク (比例・反比例 v1) =====
-const fullQuizDataBank = [
-  // --- 【1番目が正解の問題】 (25問) ---
-  {
-  question:
-    "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。"+
-    "$$\\begin{array}{c|c|c|c|c|c}" +
-    "x & \\cdots & -2 & \\cdots & 4 & \\cdots \\\\ \\hline " +
-    "y & \\cdots & 8 & \\cdots & A & \\cdots" +
-    "\\end{array}$$",
-  choices: ["$-16$", "$16$", "$-8$", "$8$"],
-  answer: "$-16$",
-  process:
-    "\\begin{aligned}" +
-    "y=ax\\\\ x=-2,\\;y=8\\;より\\;8=a\\times(-2)\\;だから\\;a=-4\\\\ " +
-    "y=-4x\\\\ x=4\\;を代入して、\\;y=-4\\times 4=-16\\\\ A=-16" +
-    "\\end{aligned}"
-}
-
-];
-        // ===== グローバル変数定義 =====
-        const modeSelectionScreen = document.getElementById('mode-selection');
-        const quizMainScreen = document.getElementById('quiz-main');
-        const musouBackground = document.getElementById('musou-background');
-
-        const questionArea = document.getElementById('question-area');
-        const nextButton = document.getElementById('next-btn');
-        const resultsArea = document.getElementById('results');
-        const scoreDisplay = document.getElementById('score');
-        const timerBar = document.getElementById('timer-bar');
-        const timerText = document.getElementById('timer-text');
-        
-        let selectedQuizData;
-        let currentQuestionIndex = 0;
-        let score = 0;
-        let currentMode = 'normal'; // 現在のモードを保存
-        
-        let timerInterval;
-        let timeLeft;
-        let TIME_LIMIT;
-        let WARNING_TIME;
-        
-        let totalSolveTime = 0;
-        let questionStartTime;
-
-        let currentRankSettings = {}; // ランク判定基準を保存
-
-        // ===== モード選択とクイズ開始の処理 =====
-        document.getElementById('normal-mode-btn').addEventListener('click', () => {
-            startGame({
-                mode: 'normal',
-                // ★ 3. モード別設定（ファイルごとに変える） ★
-                timeLimit: 15,     // ノーマル 制限時間 (例)
-                warningTime: 5,      // ノーマル 警告時間 (例)
-                isMusou: false,
-                sRankTime: 40,  // Sランク基準 (例: 40秒)
-                aRankTime: 60,  // Aランク基準 (例: 60秒)
-                bRankTime: 90   // Bランク基準 (例: 90秒)
-            });
-        });
-
-        document.getElementById('musou-mode-btn').addEventListener('click', () => {
-            startGame({
-                mode: 'musou',
-                // ★ 3. モード別設定（ファイルごとに変える） ★
-                timeLimit: 7,      // 無双 制限時間 (例)
-                warningTime: 3,      // 無双 警告時間 (例)
-                isMusou: true,
-                sRankTime: 30,  // Sランク基準 (例: 30秒)
-                aRankTime: 45,  // Aランク基準 (例: 45秒)
-                bRankTime: 60   // Bランク基準 (例: 60秒)
-            });
-        });
-
-        function startGame(settings) {
-            currentMode = settings.mode; 
-            TIME_LIMIT = settings.timeLimit;
-            WARNING_TIME = settings.warningTime;
-            
-            currentRankSettings = {
-                sRankTime: settings.sRankTime,
-                aRankTime: settings.aRankTime,
-                bRankTime: settings.bRankTime
-            };
-
-            if (settings.isMusou) {
-                musouBackground.classList.remove('hidden');
-            }
-
-            function shuffleArray(array) {
-                const newArray = [...array];
-                for (let i = newArray.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-                }
-                return newArray;
-            }
-            const shuffledData = shuffleArray(fullQuizDataBank);
-            selectedQuizData = shuffledData.slice(0, 10);
-
-            modeSelectionScreen.classList.add('hidden');
-            quizMainScreen.classList.remove('hidden');
-
-            showQuestion();
-        }
-
-
-        // ===== タイマー関数 =====
-        function startTimer() {
-            timeLeft = TIME_LIMIT;
-            timerText.textContent = timeLeft;
-            timerBar.style.width = '100%';
-            timerBar.classList.remove('warning');
-            document.body.classList.remove('timer-warning');
-
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerText.textContent = timeLeft;
-                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
-
-                if (timeLeft <= WARNING_TIME) {
-                    timerBar.classList.add('warning');
-                    document.body.classList.add('timer-warning');
-                }
-
-                if (timeLeft <= 0) {
-                    timeUp();
-                }
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
-
-        function timeUp() {
-            stopTimer();
-            totalSolveTime += TIME_LIMIT;
-
-            const choicesContainer = questionArea.querySelector('.choices');
-            const feedbackMessage = document.getElementById('feedback-message');
-            const processDisplay = document.getElementById('calculation-process');
-            const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
-
-            if(choicesContainer) {
-                choicesContainer.classList.add('answered');
-            }
-
-            feedbackMessage.textContent = "時間切れ💦";
-            feedbackMessage.classList.add('incorrect-feedback');
-            feedbackMessage.classList.remove('hidden');
-
-            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
-            processDisplay.classList.remove('hidden');
-
-            Array.from(choicesContainer.children).forEach(child => {
-                const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
-                if (choiceText === correctAnswer) {
-                     child.classList.add('correct');
-                }
-            });
-
-            if (currentQuestionIndex < selectedQuizData.length - 1) {
-                nextButton.innerText = "次の問題へ";
-            } else {
-                nextButton.innerText = "結果を見る";
-            }
-            nextButton.classList.remove('hidden');
-        }
-
-        // ===== KaTeX 混在テキスト対応ヘルパ =====
-function renderInlineMathIn(rootEl){
-  renderMathInElement(rootEl, {
-    delimiters: [
-      { left: '$$', right: '$$', display: true }, // ← これが重要
-      { left: '\\[', right: '\\]', display: true },
-      { left: '$',  right: '$',  display: false },
-      { left: '\\(', right: '\\)', display: false }
-    ],
-    throwOnError: false
-  });
-}
-
-        
-// 先頭が \begin{...} などの純粋数式ブロックかどうかの簡易判定
-function isPureMathBlock(str) {
-  const s = (str || '').trim();
-  return (
-    s.startsWith('$$') || s.startsWith('\\[') || s.startsWith('\\(') ||
-    s.startsWith('\\begin{') // \begin{aligned}, \begin{cases}, などを想定
-  );
-}
-
-// onclick 引数に渡すための最低限のエスケープ
-function escapeForOnclick(raw) {
-  return raw
-    .replace(/\\/g, '\\\\') // バックスラッシュ
-    .replace(/'/g, "\\'");  // シングルクォート
-}
-
-        // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
-        // ====== 問題表示（日本語＋数式の混在に全面対応）======
-function showQuestion() {
-  const currentQuestion = selectedQuizData[currentQuestionIndex];
-
-  // --- 選択肢HTML（クリック比較用の生文字列は $ を除去） ---
-  const choicesHtml = currentQuestion.choices.map(choice => {
-    const rawForCompare = choice.replace(/\$/g, '');
-    const safe = rawForCompare
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'");
-    return `<div class="choice" onclick="selectAnswer(this, '${safe}')">${choice}</div>`;
-  }).join('');
-
-  // --- 画面組み立て ---
-  questionArea.innerHTML = `
-    <div class="question-block">
-      <div class="problem-text" id="problem-text"></div>
-      <div class="choices">${choicesHtml}</div>
-      <div class="feedback-area">
-        <p id="feedback-message" class="hidden"></p>
-        <div id="calculation-process" class="calculation-process hidden"></div>
-      </div>
+    <div class="controls">
+      <button id="next-btn" class="hidden">次の問題へ</button>
     </div>
-  `;
+  </div>
 
-  // ★ 問題文（HTML可）→ auto-render で $/$$/[]/() を数式化
-  const problemTextElement = document.getElementById('problem-text');
-  problemTextElement.innerHTML = currentQuestion.question;   // ← innerHTML だけにする
-  renderInlineMathIn(problemTextElement);
+  <div id="musou-background" class="hidden"></div>
 
-  // ★ 選択肢も混在テキスト想定で auto-render
-  const choicesContainer = questionArea.querySelector('.choices');
-  renderInlineMathIn(choicesContainer);
+  <script>
+    // ===== 全100問の問題データバンク (比例・反比例 v1) =====
+    const fullQuizDataBank = [
+      {
+        question:
+          "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。"+
+          "$$\\begin{array}{c|c|c|c|c|c}" +
+          "x & \\cdots & -2 & \\cdots & 4 & \\cdots \\\\ \\hline " +
+          "y & \\cdots & 8 & \\cdots & A & \\cdots" +
+          "\\end{array}$$",
+        choices: ["$-16$", "$16$", "$-8$", "$8$"],
+        answer: "$-16$",
+        process:
+          "\\begin{aligned}" +
+          "y=ax\\\\ x=-2,\\;y=8\\;より\\;8=a\\times(-2)\\;だから\\;a=-4\\\\ " +
+          "y=-4x\\\\ x=4\\;を代入して、\\;y=-4\\times 4=-16\\\\ A=-16" +
+          "\\end{aligned}"
+      }
+    ];
 
-  // ★ 解説：純数式ブロックは katex.render、混在は auto-render
-  const processDisplay = document.getElementById('calculation-process');
-  const proc = currentQuestion.process || '';
-  processDisplay.innerHTML = '';
-  if (isPureMathBlock(proc)) {
-    try {
-      katex.render(proc, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
-    } catch {
-      processDisplay.textContent = proc;
-      renderInlineMathIn(processDisplay);
+    // ===== グローバル変数定義 =====
+    const modeSelectionScreen = document.getElementById('mode-selection');
+    const quizMainScreen = document.getElementById('quiz-main');
+    const musouBackground = document.getElementById('musou-background');
+
+    const questionArea = document.getElementById('question-area');
+    const nextButton = document.getElementById('next-btn');
+    const resultsArea = document.getElementById('results');
+    const scoreDisplay = document.getElementById('score');
+    const timerBar = document.getElementById('timer-bar');
+    const timerText = document.getElementById('timer-text');
+
+    let selectedQuizData;
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let currentMode = 'normal'; // 現在のモードを保存
+
+    let timerInterval;
+    let timeLeft;
+    let TIME_LIMIT;
+    let WARNING_TIME;
+
+    let totalSolveTime = 0;
+    let questionStartTime;
+
+    let currentRankSettings = {}; // ランク判定基準を保存
+
+    // ===== モード選択とクイズ開始 =====
+    document.getElementById('normal-mode-btn').addEventListener('click', () => {
+      startGame({
+        mode: 'normal',
+        timeLimit: 15, warningTime: 5, isMusou: false,
+        sRankTime: 40, aRankTime: 60, bRankTime: 90
+      });
+    });
+
+    document.getElementById('musou-mode-btn').addEventListener('click', () => {
+      startGame({
+        mode: 'musou',
+        timeLimit: 7, warningTime: 3, isMusou: true,
+        sRankTime: 30, aRankTime: 45, bRankTime: 60
+      });
+    });
+
+    function startGame(settings) {
+      currentMode = settings.mode;
+      TIME_LIMIT = settings.timeLimit;
+      WARNING_TIME = settings.warningTime;
+
+      currentRankSettings = {
+        sRankTime: settings.sRankTime,
+        aRankTime: settings.aRankTime,
+        bRankTime: settings.bRankTime
+      };
+
+      if (settings.isMusou) musouBackground.classList.remove('hidden');
+
+      function shuffleArray(array) {
+        const a = [...array];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+      const shuffledData = shuffleArray(fullQuizDataBank);
+      selectedQuizData = shuffledData.slice(0, 10);
+
+      modeSelectionScreen.classList.add('hidden');
+      quizMainScreen.classList.remove('hidden');
+
+      showQuestion();
     }
-  } else {
-    processDisplay.textContent = proc;
-    renderInlineMathIn(processDisplay);
-  }
 
-  // タイマー開始
-  questionStartTime = Date.now();
-  startTimer();
-}
+    // ===== タイマー =====
+    function startTimer() {
+      timeLeft = TIME_LIMIT;
+      timerText.textContent = timeLeft;
+      timerBar.style.width = '100%';
+      timerBar.classList.remove('warning');
+      document.body.classList.remove('timer-warning');
 
-        function selectAnswer(element, selectedChoice) {
-            stopTimer();
-            const timeTaken = (Date.now() - questionStartTime) / 1000;
-            totalSolveTime += timeTaken;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerText.textContent = timeLeft;
+        timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
 
-            const choicesContainer = element.parentElement;
-            if (choicesContainer.classList.contains('answered')) return;
-            choicesContainer.classList.add('answered');
-
-            const currentQuestion = selectedQuizData[currentQuestionIndex];
-            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
-
-            const feedbackMessage = document.getElementById('feedback-message');
-            const processDisplay = document.getElementById('calculation-process');
-
-            if (selectedChoice === correctAnswer) { 
-                score++;
-                element.classList.add('correct');
-                feedbackMessage.textContent = "正解💐";
-                feedbackMessage.classList.add('correct-feedback');
-            } else {
-                element.classList.add('incorrect');
-                feedbackMessage.textContent = "不正解💦";
-                feedbackMessage.classList.add('incorrect-feedback');
-                
-                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
-                processDisplay.classList.remove('hidden');
-
-                 // 正解の選択肢をハイライト
-                Array.from(choicesContainer.children).forEach(child => {
-                    const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
-                    if (choiceText === correctAnswer) {
-                         child.classList.add('correct');
-                    }
-                });
-            }
-            
-            feedbackMessage.classList.remove('hidden');
-            
-            if (currentQuestionIndex < selectedQuizData.length - 1) {
-                nextButton.innerText = "次の問題へ";
-            } else {
-                nextButton.innerText = "結果を見る";
-            }
-            nextButton.classList.remove('hidden');
+        if (timeLeft <= WARNING_TIME) {
+          timerBar.classList.add('warning');
+          document.body.classList.add('timer-warning');
         }
+        if (timeLeft <= 0) timeUp();
+      }, 1000);
+    }
+    function stopTimer() { clearInterval(timerInterval); }
 
-        nextButton.addEventListener('click', () => {
-            currentQuestionIndex++;
-            document.body.classList.remove('timer-warning');
-            if (currentQuestionIndex < selectedQuizData.length) {
-                showQuestion();
-                nextButton.classList.add('hidden');
-            } else {
-                showResults();
-            }
+    function timeUp() {
+      stopTimer();
+      totalSolveTime += TIME_LIMIT;
+
+      const choicesContainer = questionArea.querySelector('.choices');
+      const feedbackMessage = document.getElementById('feedback-message');
+      const processDisplay = document.getElementById('calculation-process');
+      const currentQuestion = selectedQuizData[currentQuestionIndex];
+      const correctAnswer = currentQuestion.answer.replace(/\$/g, '');
+
+      if (choicesContainer) choicesContainer.classList.add('answered');
+
+      feedbackMessage.textContent = "時間切れ💦";
+      feedbackMessage.classList.add('incorrect-feedback');
+      feedbackMessage.classList.remove('hidden');
+
+      // 解説（時間切れ表示）
+      katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+      processDisplay.classList.remove('hidden');
+
+      Array.from(choicesContainer.children).forEach(child => {
+        const choiceText = child.textContent.replace(/\$/g, '');
+        if (choiceText === correctAnswer) child.classList.add('correct');
+      });
+
+      nextButton.innerText = (currentQuestionIndex < selectedQuizData.length - 1) ? "次の問題へ" : "結果を見る";
+      nextButton.classList.remove('hidden');
+    }
+
+    // ===== KaTeX 混在テキスト対応ヘルパ =====
+    function renderInlineMathIn(rootEl){
+      if (!window.renderMathInElement) { console.warn('auto-render not ready'); return; }
+      renderMathInElement(rootEl, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '$',  right: '$',  display: false },
+          { left: '\\(', right: '\\)', display: false }
+        ],
+        throwOnError: false
+      });
+    }
+
+    // 純粋数式ブロックかの簡易判定
+    function isPureMathBlock(str) {
+      const s = (str || '').trim();
+      return s.startsWith('$$') || s.startsWith('\\[') || s.startsWith('\\(') || s.startsWith('\\begin{');
+    }
+
+    // onclick 引数用の最低限エスケープ
+    function escapeForOnclick(raw) {
+      return raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // ====== 問題表示（日本語＋数式の混在に対応）======
+    function showQuestion() {
+      const currentQuestion = selectedQuizData[currentQuestionIndex];
+
+      // 選択肢HTML
+      const choicesHtml = currentQuestion.choices.map(choice => {
+        const rawForCompare = choice.replace(/\$/g, '');
+        const safe = escapeForOnclick(rawForCompare);
+        return `<div class="choice" onclick="selectAnswer(this, '${safe}')">${choice}</div>`;
+      }).join('');
+
+      // 画面組み立て
+      questionArea.innerHTML = `
+        <div class="question-block">
+          <div class="problem-text" id="problem-text"></div>
+          <div class="choices">${choicesHtml}</div>
+          <div class="feedback-area">
+            <p id="feedback-message" class="hidden"></p>
+            <div id="calculation-process" class="calculation-process hidden"></div>
+          </div>
+        </div>
+      `;
+
+      // 問題文：HTML → auto-render
+      const problemTextElement = document.getElementById('problem-text');
+      problemTextElement.innerHTML = currentQuestion.question;
+      renderInlineMathIn(problemTextElement);
+
+      // 選択肢：auto-render
+      const choicesContainer = questionArea.querySelector('.choices');
+      renderInlineMathIn(choicesContainer);
+
+      // 解説：純数式は katex.render、混在は auto-render
+      const processDisplay = document.getElementById('calculation-process');
+      const proc = currentQuestion.process || '';
+      processDisplay.innerHTML = '';
+      if (isPureMathBlock(proc)) {
+        try {
+          katex.render(proc, processDisplay, { throwOnError: false, displayMode: true });
+        } catch {
+          processDisplay.textContent = proc;
+          renderInlineMathIn(processDisplay);
+        }
+      } else {
+        processDisplay.textContent = proc;
+        renderInlineMathIn(processDisplay);
+      }
+
+      // タイマー開始
+      questionStartTime = Date.now();
+      startTimer();
+    }
+
+    function selectAnswer(element, selectedChoice) {
+      stopTimer();
+      const timeTaken = (Date.now() - questionStartTime) / 1000;
+      totalSolveTime += timeTaken;
+
+      const choicesContainer = element.parentElement;
+      if (choicesContainer.classList.contains('answered')) return;
+      choicesContainer.classList.add('answered');
+
+      const currentQuestion = selectedQuizData[currentQuestionIndex];
+      const correctAnswer = currentQuestion.answer.replace(/\$/g, '');
+
+      const feedbackMessage = document.getElementById('feedback-message');
+      const processDisplay = document.getElementById('calculation-process');
+
+      if (selectedChoice === correctAnswer) {
+        score++;
+        element.classList.add('correct');
+        feedbackMessage.textContent = "正解💐";
+        feedbackMessage.classList.add('correct-feedback');
+      } else {
+        element.classList.add('incorrect');
+        feedbackMessage.textContent = "不正解💦";
+        feedbackMessage.classList.add('incorrect-feedback');
+
+        // 解説（不正解時表示）
+        katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+        processDisplay.classList.remove('hidden');
+
+        // 正解の選択肢をハイライト
+        Array.from(choicesContainer.children).forEach(child => {
+          const choiceText = child.textContent.replace(/\$/g, '');
+          if (choiceText === correctAnswer) child.classList.add('correct');
         });
+      }
 
-        function showResults() {
-            questionArea.classList.add('hidden');
-            nextButton.classList.add('hidden');
-            document.querySelector('.timer-container').classList.add('hidden');
-            
-            const finalScore = score * 10;
-            const totalPoints = selectedQuizData.length * 10;
-            const totalSeconds = Math.round(totalSolveTime);
+      feedbackMessage.classList.remove('hidden');
 
-            let rank = '';
-            let rankColor = '';
-            let rankName = '';
+      nextButton.innerText = (currentQuestionIndex < selectedQuizData.length - 1) ? "次の問題へ" : "結果を見る";
+      nextButton.classList.remove('hidden');
+    }
 
-            if (totalSeconds <= currentRankSettings.sRankTime) {
-                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
-                rankName = 'S';
-            } else if (totalSeconds <= currentRankSettings.aRankTime) {
-                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
-                rankName = 'A';
-            } else if (totalSeconds <= currentRankSettings.bRankTime) {
-                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
-                rankName = 'B';
-            } else {
-                rank = '💪 Cランク 💪'; rankColor = '#28a745';
-                rankName = 'C';
-            }
-            
-            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
-            
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
-            const thisTestId = "test11"; // 例: test4 なら "test4", test5 なら "test5"
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+    nextButton.addEventListener('click', () => {
+      currentQuestionIndex++;
+      document.body.classList.remove('timer-warning');
+      if (currentQuestionIndex < selectedQuizData.length) {
+        showQuestion();
+        nextButton.classList.add('hidden');
+      } else {
+        showResults();
+      }
+    });
 
-            // ★ 5. 履歴キー（ファイルごとに変える） ★
-            const historyKey = 'algebraHistory'; // ★「文字式」用のキー
+    function showResults() {
+      questionArea.classList.add('hidden');
+      nextButton.classList.add('hidden');
+      document.querySelector('.timer-container').classList.add('hidden');
 
-            // --- 達成状況の保存ロジック ---
-            let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
-            const currentBest = achievements[thisTestId]; 
-            
-            let newLevel = ''; // このラウンドで達成したレベル
-            let shouldUpdate = false; // 保存を更新すべきか
-            let trophyMessage = ''; // ★ 表示するメッセージ用変数を追加
+      const finalScore = score * 10;
+      const totalPoints = selectedQuizData.length * 10;
+      const totalSeconds = Math.round(totalSolveTime);
 
-            // 1. 満点かどうかをまず確認
-            if (finalScore === totalPoints) {
-                
-                // 2. 満点の場合、ランクを確認
-                if (rankName === 'S' || rankName === 'A') {
-                    newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
-                } else {
-                    newLevel = 'apple';
-                }
+      let rank = '', rankColor = '', rankName = '';
+      if (totalSeconds <= currentRankSettings.sRankTime) {
+        rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107'; rankName = 'S';
+      } else if (totalSeconds <= currentRankSettings.aRankTime) {
+        rank = '🌛 Aランク 🌛'; rankColor = '#6c757d'; rankName = 'A';
+      } else if (totalSeconds <= currentRankSettings.bRankTime) {
+        rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32'; rankName = 'B';
+      } else {
+        rank = '💪 Cランク 💪'; rankColor = '#28a745'; rankName = 'C';
+      }
 
-                // 3. 達成状況を更新 (格下げはしない)
-                if (newLevel === 'musou') {
-                    shouldUpdate = true;
-                } else if (newLevel === 'normal' && (currentBest !== 'musou')) {
-                    shouldUpdate = true;
-                } else if (newLevel === 'apple' && (currentBest !== 'musou' && currentBest !== 'normal')) {
-                    shouldUpdate = true;
-                }
+      // ★ 達成状況 保存
+      const thisTestId = "test11";
+      const historyKey = 'algebraHistory';
+      let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+      const currentBest = achievements[thisTestId];
+      let newLevel = '';
+      let shouldUpdate = false;
+      let trophyMessage = '';
 
-                if (shouldUpdate) {
-                    achievements[thisTestId] = newLevel;
-                    localStorage.setItem('quizAchievements', JSON.stringify(achievements));
-                    
-                    // ★ メッセージをセット ★
-                    if (newLevel === 'musou') {
-                        trophyMessage = '👑をゲットしました！';
-                    } else if (newLevel === 'normal') {
-                        trophyMessage = '⭐をゲットしました！';
-                    } else if (newLevel === 'apple') {
-                        trophyMessage = '🍎をゲットしました！';
-                    }
-                }
-            }
-            // --- 達成状況の保存ロジックここまで ---
-            
-            // --- 履歴保存処理 ---
-             const newResult = {
-                score: finalScore,
-                totalPoints: totalPoints,
-                time: totalSeconds,
-                rank: rankName, 
-                date: new Date().toLocaleString('ja-JP') 
-            };
-            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
-            history.unshift(newResult);
-            localStorage.setItem(historyKey, JSON.stringify(history)); 
-            // --- 保存処理ここまで ---
+      if (finalScore === totalPoints) {
+        if (rankName === 'S' || rankName === 'A') newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
+        else newLevel = 'apple';
 
-            resultsArea.classList.remove('hidden');
-            
-            const timeInfoDisplay = document.getElementById('time-info');
-            const rankInfoDisplay = document.getElementById('rank-info');
-            const trophyDisplay = document.getElementById('trophy-message'); // ★ 追加
+        if (newLevel === 'musou') shouldUpdate = true;
+        else if (newLevel === 'normal' && (currentBest !== 'musou')) shouldUpdate = true;
+        else if (newLevel === 'apple' && (currentBest !== 'musou' && currentBest !== 'normal')) shouldUpdate = true;
 
-            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
-            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
-            rankInfoDisplay.textContent = rank; 
-            rankInfoDisplay.style.color = rankColor;
-            trophyDisplay.textContent = trophyMessage; // ★ 追加
+        if (shouldUpdate) {
+          achievements[thisTestId] = newLevel;
+          localStorage.setItem('quizAchievements', JSON.stringify(achievements));
+          if (newLevel === 'musou') trophyMessage = '👑をゲットしました！';
+          else if (newLevel === 'normal') trophyMessage = '⭐をゲットしました！';
+          else if (newLevel === 'apple') trophyMessage = '🍎をゲットしました！';
         }
-        
-    </script>
+      }
 
+      // 履歴保存
+      const newResult = {
+        score: finalScore, totalPoints: totalPoints, time: totalSeconds,
+        rank: rankName, date: new Date().toLocaleString('ja-JP')
+      };
+      let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+      history.unshift(newResult);
+      localStorage.setItem(historyKey, JSON.stringify(history));
+
+      // 表示
+      resultsArea.classList.remove('hidden');
+      const timeInfoDisplay = document.getElementById('time-info');
+      const rankInfoDisplay = document.getElementById('rank-info');
+      const trophyDisplay = document.getElementById('trophy-message');
+
+      scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+      timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+      rankInfoDisplay.textContent = rank;
+      rankInfoDisplay.style.color = rankColor;
+      trophyDisplay.textContent = trophyMessage;
+    }
+  </script>
 </body>
 </html>
-
