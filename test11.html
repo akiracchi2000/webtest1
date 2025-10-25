@@ -410,6 +410,19 @@ function renderInlineMathIn(rootEl) {
   });
 }
 
+function renderInlineMathIn(rootEl){
+  renderMathInElement(rootEl, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true }, // ← これが重要
+      { left: '\\[', right: '\\]', display: true },
+      { left: '$',  right: '$',  display: false },
+      { left: '\\(', right: '\\)', display: false }
+    ],
+    throwOnError: false
+  });
+}
+
+        
 // 先頭が \begin{...} などの純粋数式ブロックかどうかの簡易判定
 function isPureMathBlock(str) {
   const s = (str || '').trim();
@@ -450,6 +463,11 @@ function showQuestion() {
       </div>
     </div>
   `;
+
+　// ★★★ ここに入れる（問題文のレンダリング）★★★
+  const problemTextElement = document.getElementById('problem-text');
+  problemTextElement.innerHTML = currentQuestion.question;   // ← innerHTML で挿入（$$…$$ 可）
+  renderInlineMathIn(problemTextElement);                     // ← auto-render で $/$$/[]/() を数式化
 
   // --- 問題文：混在テキストをそのまま入れて auto-render ---
   const problemTextElement = document.getElementById('problem-text');
