@@ -134,11 +134,29 @@
         .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
         .choices.answered { pointer-events: none; }
         .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
-        .feedback-area { margin-top: 1.5em; min-height: 150px; max-heigit: 300px; overflow-y: auto;}
+        .feedback-area {
+            margin-top: 1.5em;
+            min-height: 150px; /* 最小高さは維持 */
+            max-height: 350px; /* ★ 最大高さを設定 (350px程度に。画面に合わせて調整してください) */
+            overflow-y: auto;  /* ★ 高さを超えたら縦スクロールバーを出す */
+            /* ↓ calculation-processがはみ出さないように念のため */
+            overflow-x: hidden;
+        }
         .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
         .feedback-message.correct-feedback { color: #28a745; }
         .feedback-message.incorrect-feedback { color: #dc3545; }
-        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; max-height: 200px; overflow-y: auto; box-sizing: border-box;}
+        .calculation-process {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            font-size: 1.1em;
+            border-left: 5px solid #6c757d;
+            /* ↓ calculation-process自体の高さも制限したい場合（任意） */
+            /* max-height: 250px; */
+            /* overflow-y: auto; */
+            box-sizing: border-box; /* paddingを含めた高さ計算に */
+            word-wrap: break-word; /* 横にはみ出す場合も考慮 */
+        }
         .katex-display { text-align: left !important; }
         .controls { text-align: center; margin-top: 1em; height: 50px; }
         #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
