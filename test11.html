@@ -140,6 +140,21 @@
       color: #fff; background-color: #6c757d; border-radius: 5px; transition: background-color 0.2s;
     }
     .home-btn:hover { background-color: #5a6268; }
+
+    /* 問題文を左寄せにする */
+.problem-text {
+  text-align: left !important;
+}
+
+/* ディスプレイ数式（$$…$$ 等）も左寄せ */
+.problem-text .katex-display {
+  text-align: left !important;
+}
+.problem-text .katex-display > .katex {
+  display: inline-block;
+  max-width: 100%;
+}
+
   </style>
 </head>
 <body>
