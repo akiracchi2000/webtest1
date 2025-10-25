@@ -1017,7 +1017,7 @@ const fullQuizDataBank = [
       feedbackMessage.classList.remove('hidden');
 
       // 解説（時間切れ表示）
-      katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+      renderProcess(processDisplay, currentQuestion.process);
       processDisplay.classList.remove('hidden');
 
       Array.from(choicesContainer.children).forEach(child => {
@@ -1049,6 +1049,27 @@ const fullQuizDataBank = [
       return s.startsWith('$$') || s.startsWith('\\[') || s.startsWith('\\(') || s.startsWith('\\begin{');
     }
 
+    function renderProcess(processDisplay, proc){
+  const text = proc || '';
+  processDisplay.innerHTML = '';
+
+  // 純粋な数式ブロック（$$, \[, \begin{...} など）なら KaTeX で一発描画
+  if (isPureMathBlock(text)) {
+    try {
+      katex.render(text, processDisplay, { throwOnError:false, displayMode:true, fleqn:true });
+      return;
+    } catch (e) { /* フォールバックに続く */ }
+  }
+
+  // 文章＋インライン数式（$...$ / \( ... \)）は auto-render を使う
+  const html = text
+    .replace(/\\\\(?![a-zA-Z])/g, '<br>')  // 改行だけ <br> に、\neq 等は壊さない
+    .replace(/\n/g, '<br>');
+  processDisplay.innerHTML = html;
+  renderInlineMathIn(processDisplay);
+}
+
+    
     // onclick 引数用の最低限エスケープ
     function escapeForOnclick(raw) {
       return raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -1091,25 +1112,9 @@ const processDisplay = document.getElementById('calculation-process');
 const proc = currentQuestion.process || '';
 processDisplay.innerHTML = '';
 
-if (isPureMathBlock(proc)) {
-  try {
-    katex.render(proc, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
-  } catch {
-    // フォールバック：改行を <br> に
-    const html = proc
-      .replace(/\\\\(?![a-zA-Z])/g, '<br>')  // 「\\」の直後が英字でないときだけ改行扱い
-      .replace(/\n/g, '<br>');
-    processDisplay.innerHTML = html;
-    renderInlineMathIn(processDisplay);
-  }
-} else {
-  // 文章ベース（数式は $...$ だけ）のときはこちら
-  const html = proc
-    .replace(/\\\\(?![a-zA-Z])/g, '<br>')    // \\neq や \\frac を壊さない
-    .replace(/\n/g, '<br>');
-  processDisplay.innerHTML = html;
-  renderInlineMathIn(processDisplay);
-}
+const processDisplay = document.getElementById('calculation-process');
+renderProcess(processDisplay, currentQuestion.process || '');
+
 
 
       // タイマー開始
@@ -1143,7 +1148,7 @@ if (isPureMathBlock(proc)) {
         feedbackMessage.classList.add('incorrect-feedback');
 
         // 解説（不正解時表示）
-        katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+        renderProcess(processDisplay, currentQuestion.process);
         processDisplay.classList.remove('hidden');
 
         // 正解の選択肢をハイライト
