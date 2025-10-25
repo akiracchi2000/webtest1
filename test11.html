@@ -9,6 +9,7 @@
     
     <link rel="stylesheet" href="./katex/katex.min.css">
     <script defer src="./katex/katex.min.js"></script>
+　　<script defer src="./katex/contrib/auto-render.min.js"></script>
 
     <style>
         /* ページの基本スタイル */
@@ -384,76 +385,68 @@ const fullQuizDataBank = [
 
         // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
         function showQuestion() {
-            const currentQuestion = selectedQuizData[currentQuestionIndex];
+  const currentQuestion = selectedQuizData[currentQuestionIndex];
 
-            // 選択肢のHTMLを生成（onclick属性には $ を除去したものを渡す）
-            const choicesHtml = currentQuestion.choices.map(choice => {
-                const onclickChoice = choice.replace(/\$/g, ''); // $ 除去
-                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
-            }).join('');
+  // --- 選択肢HTMLを生成（onclick には $ を除いた生文字列を安全に渡す）---
+  const choicesHtml = currentQuestion.choices.map(choice => {
+    // $ を除去して selectAnswer の第2引数に渡す
+    const raw = choice.replace(/\$/g, '');
+    // onclick 引数用に最低限のエスケープ
+    const safeForOnclick = raw
+      .replace(/\\/g, '\\\\')  // バックスラッシュ
+      .replace(/'/g, "\\'");   // シングルクォート
+    return `<div class="choice" onclick="selectAnswer(this, '${safeForOnclick}')">${choice}</div>`;
+  }).join('');
 
-            // 問題エリアのHTMLを設定
-            questionArea.innerHTML = `
-                <div class="question-block">
-                    <div class="problem-text" id="problem-text"></div>
-                    <div class="choices">${choicesHtml}</div>
-                    <div class="feedback-area">
-                        <p id="feedback-message" class="hidden"></p>
-                        <div id="calculation-process" class="calculation-process hidden"></div>
-                    </div>
-                </div>
-            `;
+  // --- 問題エリア構築 ---
+  questionArea.innerHTML = `
+    <div class="question-block">
+      <div class="problem-text" id="problem-text"></div>
+      <div class="choices">${choicesHtml}</div>
+      <div class="feedback-area">
+        <p id="feedback-message" class="hidden"></p>
+        <div id="calculation-process" class="calculation-process hidden"></div>
+      </div>
+    </div>
+  `;
 
-            // ★ 問題文の KaTeX レンダリング ($ 除去) ★
-            const problemTextElement = document.getElementById('problem-text');
-            // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
-            let questionKatexString = currentQuestion.question;
-            if (questionKatexString.startsWith('$') && questionKatexString.endsWith('$')) {
-                 questionKatexString = questionKatexString.slice(1, -1); 
-            } else {
-                 console.warn("Question text might be missing $ delimiters:", currentQuestion.question);
-            }
+  // --- 問題文：auto-render に任せる（日本語＋$...$混在対応）---
+  const problemTextElement = document.getElementById('problem-text');
+  // そのままテキストとして入れて、要素内の $...$ だけ KaTeX に変換
+  problemTextElement.textContent = currentQuestion.question;
 
-            try {
-                katex.render(questionKatexString, problemTextElement, {
-                    throwOnError: true, // エラーがあればコンソールに出力
-                    displayMode: true  // 問題文は中央揃えのディスプレイモード
-                });
-            } catch (e) {
-                 // KaTeXレンダリングエラー時のフォールバック
-                 console.error("KaTeX render error on question:", currentQuestion.question, e);
-                 problemTextElement.textContent = currentQuestion.question; // 元のテキストを表示
-            }
+  if (window.renderMathInElement) {
+    renderMathInElement(problemTextElement, {
+      delimiters: [
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true }
+      ],
+      throwOnError: false
+    });
+  } else {
+    // フォールバック：auto-render が未読込ならそのまま文字列表示
+    console.warn('auto-render (renderMathInElement) not found. Did you load ./katex/contrib/auto-render.min.js ?');
+  }
 
-            // ★ 選択肢の KaTeX レンダリング ($ 除去) ★
-            const choiceElements = questionArea.querySelectorAll('.choice');
-            choiceElements.forEach(element => {
-                const originalText = element.textContent; // 元の $付きテキストを取得
-                 // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
-                let katexString = originalText;
-                 if (katexString.startsWith('$') && katexString.endsWith('$')) {
-                     katexString = katexString.slice(1, -1); 
-                 } else {
-                     console.warn("Choice text might be missing $ delimiters:", originalText);
-                 }
-                
-                try {
-                    // 要素の中身をKaTeXでレンダリング（元のテキストは上書きされる）
-                    katex.render(katexString, element, {
-                        throwOnError: true, // エラーがあればコンソールに出力
-                        displayMode: false // 選択肢はインラインモード
-                    });
-                } catch (e) {
-                    // KaTeXレンダリングエラー時のフォールバック
-                    console.error("KaTeX render error on choice:", originalText, e);
-                    // エラーの場合は元のテキストのままにする（innerHTMLを上書きしない）
-                }
-            });
+  // --- 選択肢：こちらも auto-render で $...$ 部分のみ変換 ---
+  const choicesContainer = questionArea.querySelector('.choices');
+  if (window.renderMathInElement) {
+    renderMathInElement(choicesContainer, {
+      delimiters: [
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true }
+      ],
+      throwOnError: false
+    });
+  }
 
-            // タイマー開始
-            questionStartTime = Date.now();
-            startTimer();
-        }
+  // --- タイマー開始 ---
+  questionStartTime = Date.now();
+  startTimer();
+}
+
 
         function selectAnswer(element, selectedChoice) {
             stopTimer();
