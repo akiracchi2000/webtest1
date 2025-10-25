@@ -128,6 +128,10 @@
         }
 
         .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+          .problem-text { 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; /* モバイルで滑らかスクロール */
+  }
         .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
         .choice:hover { background-color: #d1d9e0; }
