@@ -1,1 +1,1223 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>計算テスト (テンプレートA)</title>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
+
+    <style>
+        /* ページの基本スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            transition: background-color 0.5s ease;
+        }
+        
+        body.timer-warning {
+            background-color: #ffebee;
+        }
+
+        /* ===== モード選択画面のスタイル ===== */
+        #mode-selection {
+            text-align: center;
+            background: #fff;
+            padding: 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        #mode-selection h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        .mode-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: #fff;
+            font-weight: bold;
+        }
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #normal-mode-btn {
+            background-color: #3498db;
+        }
+        #musou-mode-btn {
+            background-color: #c0392b;
+        }
+
+        /* ===== 無双モード用の背景画像 ===== */
+        #musou-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('./hannya.png'); /* 画像パス */
+            background-repeat: repeat;
+            background-size: 100px; 
+            background-position: center;
+            opacity: 0.15;
+            z-index: -1;
+        }
+
+        /* クイズ全体のコンテナ */
+        .quiz-container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .timer-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            margin-bottom: 1.5em;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #3498db;
+            border-radius: 15px;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+        .timer-bar.warning {
+            background-color: #dc3545;
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin: 0 0 1em 0;
+        }
+
+        .problem-text { font-size: 2em; margin-bottom: 1em; text-align: center; min-height: 50px; }
+        .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
+        .choice:hover { background-color: #d1d9e0; }
+        .choice.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .choice.incorrect { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .choices.answered { pointer-events: none; }
+        .choices.answered .choice:not(.correct):not(.incorrect) { opacity: 0.6; }
+        .feedback-area { margin-top: 1.5em; min-height: 150px; }
+        .feedback-message { font-size: 2.5em; font-weight: bold; text-align: center; margin: 0 0 15px 0; }
+        .feedback-message.correct-feedback { color: #28a745; }
+        .feedback-message.incorrect-feedback { color: #dc3545; }
+        .calculation-process { background-color: #f8f9fa; border-radius: 5px; padding: 15px; font-size: 1.1em; border-left: 5px solid #6c757d; }
+        .katex-display { text-align: left !important; }
+        .controls { text-align: center; margin-top: 1em; height: 50px; }
+        #next-btn { padding: 12px 35px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #next-btn:hover { background-color: #2980b9; }
+        
+        #results { text-align: center; }
+        #results h2 { color: #2c3e50; }
+        #results #score { font-size: 2em; font-weight: bold; color: #3498db; margin: 0.5em 0; }
+        #results #time-info { font-size: 1.2em; color: #6c757d; margin: 0.5em 0; }
+        #results #rank-info { font-size: 2.5em; font-weight: bold; margin: 0.5em 0; }
+        #results .sub-message { font-size: 1em; color: #6c757d; margin-top: 0.5em;}
+        .trophy-message {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e74c3c; /* 🍎の色に合わせました */
+            margin: 0.5em 0;
+            min-height: 1.2em; /* メッセージが無い時にレイアウトが崩れないように */
+        }
+        
+        .hidden { display: none; }
+        
+        /* ===== トップへ戻るボタンのスタイル ===== */
+        .home-btn {
+            display: inline-block;
+            margin-top: 1.5em;
+            padding: 10px 25px;
+            font-size: 1em;
+            text-decoration: none;
+            color: #fff;
+            background-color: #6c757d;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .home-btn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mode-selection">
+        <h1>モードを選択</h1>
+        <div class="mode-buttons">
+            <button id="normal-mode-btn" class="mode-btn">✒️ノーマルモード✒️</button>
+            <button id="musou-mode-btn" class="mode-btn">⚔️無双モード⚔️</button>
+            </div>
+        <a href="./index.html" class="home-btn" style="margin-top: 2em;">トップページに戻る</a>
+    </div>
+
+    <div class="quiz-container hidden" id="quiz-main">
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+            <span class="timer-text" id="timer-text"></span>
+        </div>
+        
+        <h1>2次方程式 (上級)</h1>
+        <div id="question-area"></div>
+        
+        <div id="results" class="hidden">
+            <h2>テスト終了！</h2>
+            <p id="score"></p>
+            <p id="time-info"></p>
+            <p id="rank-info"></p>
+            <p id="trophy-message" class="trophy-message"></p> <p class="sub-message">お疲れ様でした！</p>
+            <a href="./index.html" class="home-btn">トップページに戻る</a>
+        </div>
+        
+        <div class="controls">
+            <button id="next-btn" class="hidden">次の問題へ</button>
+        </div>
+    </div>
+
+    <div id="musou-background" class="hidden"></div>
+
+
+    <script>
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★ 
+        // ★  const fullQuizDataBank = [ ... ];
+        // ★  (↑ ここに $ を含む100問のデータバンクを貼り付け)
+        // ★ 
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+// ===== 全100問の問題データバンク (比例・反比例 v1) =====
+const fullQuizDataBank = [
+  // --- 【1番目が正解の問題】 (25問) ---
+  {
+    question: "$y$は$x$に比例し、$x=2$のとき$y=6$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=3x$", "$y=6x$", "$y=\\frac{1}{3}x$", "$y=12x$"],
+    answer: "$y=3x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=2, y=6 \\text{ を代入すると、} \\\\ 6 = a \\times 2 \\\\ a = 3 \\\\ \\text{よって、} y = 3x \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=3$のとき$y=4$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=\\frac{12}{x}$", "$y=\\frac{4}{3x}$", "$y=\\frac{3}{4x}$", "$y=12x$"],
+    answer: "$y=\\frac{12}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=3, y=4 \\text{ を代入すると、} \\\\ 4 = \\frac{a}{3} \\\\ a = 4 \\times 3 = 12 \\\\ \\text{よって、} y = \\frac{12}{x} \\end{aligned}"
+  },
+  {
+    question: "$y=5x$について、$x=4$のときの$y$の値を求めなさい。",
+    choices: ["$y=20$", "$y=5$", "$y=4$", "$y=1$"],
+    answer: "$y=20$",
+    process: "\\begin{aligned} y = 5x \\text{ に } x=4 \\text{ を代入する。} \\\\ y = 5 \\times 4 \\\\ y = 20 \\end{aligned}"
+  },
+  {
+    question: "$y=\\frac{18}{x}$について、$x=-6$のときの$y$の値を求めなさい。",
+    choices: ["$y=-3$", "$y=3$", "$y=-108$", "$y=108$"],
+    answer: "$y=-3$",
+    process: "\\begin{aligned} y = \\frac{18}{x} \\text{ に } x=-6 \\text{ を代入する。} \\\\ y = \\frac{18}{-6} \\\\ y = -3 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=-3$のとき$y=15$である。$x=5$のときの$y$の値を求めなさい。",
+    choices: ["$y=-25$", "$y=25$", "$y=-15$", "$y=15$"],
+    answer: "$y=-25$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-3, y=15 \\text{ より } 15 = a \\times (-3) \\text{ だから } a = -5 \\\\ y = -5x \\\\ x=5 \\text{ を代入して、} y = -5 \\times 5 = -25 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=4$のとき$y=-2$である。$x=-8$のときの$y$の値を求めなさい。",
+    choices: ["$y=1$", "$y=-1$", "$y=16$", "$y=-16$"],
+    answer: "$y=1$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=4, y=-2 \\text{ より } -2 = \\frac{a}{4} \\text{ だから } a = -8 \\\\ y = \\frac{-8}{x} \\\\ x=-8 \\text{ を代入して、} y = \\frac{-8}{-8} = 1 \\end{aligned}"
+  },
+  {
+    question: "次のア〜エのうち、$y$が$x$に比例するものはどれか。 ア: $y=x+2$ イ: $y=5x$ ウ: $y=\\frac{3}{x}$ エ: $y=x^2$",
+    choices: ["イ", "ア", "ウ", "エ"],
+    answer: "イ",
+    process: "比例の式は $y=ax$ ($a$は定数) の形で表される。\\\\ ア: $y=x+2$ は比例ではない。\\\\ イ: $y=5x$ は $a=5$ の比例の式。\\\\ ウ: $y=\\frac{3}{x}$ は反比例の式。\\\\ エ: $y=x^2$ は2乗に比例する式。"
+  },
+  {
+    question: "次のア〜エのうち、$y$が$x$に反比例するものはどれか。 ア: $y=-2x$ イ: $y=x-5$ ウ: $y=\\frac{x}{4}$ エ: $y=\\frac{-8}{x}$",
+    choices: ["エ", "ア", "イ", "ウ"],
+    answer: "エ",
+    process: "反比例の式は $y=\\frac{a}{x}$ ($a$は定数) の形で表される。\\\\ ア: $y=-2x$ は比例の式。\\\\ イ: $y=x-5$ は比例でも反比例でもない。\\\\ ウ: $y=\\frac{x}{4}$ は $y=\\frac{1}{4}x$ なので比例の式。\\\\ エ: $y=\\frac{-8}{x}$ は $a=-8$ の反比例の式。"
+  },
+  {
+    question: "比例 $y=-4x$ のグラフについて、正しい記述を選びなさい。",
+    choices: ["原点を通り、右下がりの直線", "原点を通らない、右下がりの直線", "原点を通り、右上がりの直線", "双曲線"],
+    answer: "原点を通り、右下がりの直線",
+    process: "比例 $y=ax$ のグラフは原点を通る直線である。\\\\ 比例定数 $a=-4$ が負なので、グラフは右下がりになる。"
+  },
+  {
+    question: "反比例 $y=\\frac{6}{x}$ のグラフについて、正しい記述を選びなさい。",
+    choices: ["$x>0$の範囲で$x$が増加すると$y$は減少する", "原点を通る直線", "$x>0$の範囲で$x$が増加すると$y$は増加する", "比例定数は負である"],
+    answer: "$x>0$の範囲で$x$が増加すると$y$は減少する",
+    process: "反比例 $y=\\frac{a}{x}$ のグラフは双曲線である。\\\\ 比例定数 $a=6$ が正なので、グラフは第1象限と第3象限にある。\\\\ $x>0$ の範囲 (第1象限) では、$x$の値が増加すると$y$の値は減少する。"
+  },
+  {
+    question: "点$(3, -12)$を通る比例のグラフの式を求めなさい。",
+    choices: ["$y=-4x$", "$y=4x$", "$y=-\\frac{1}{4}x$", "$y=-36x$"],
+    answer: "$y=-4x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=3, y=-12 \\text{ を代入すると、} \\\\ -12 = a \\times 3 \\\\ a = -4 \\\\ \\text{よって、} y = -4x \\end{aligned}"
+  },
+  {
+    question: "点$(-2, 5)$を通る反比例のグラフの式を求めなさい。",
+    choices: ["$y=-\\frac{10}{x}$", "$y=\\frac{10}{x}$", "$y=-\\frac{5}{2x}$", "$y=\\frac{2}{5x}$"],
+    answer: "$y=-\\frac{10}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-2, y=5 \\text{ を代入すると、} \\\\ 5 = \\frac{a}{-2} \\\\ a = 5 \\times (-2) = -10 \\\\ \\text{よって、} y = -\\frac{10}{x} \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。\\n| $x$ | $\\dots$ | -2 | $\\dots$ | 4 | $\\dots$ |\\n|---|---|---|---|---|---|\\n| $y$ | $\\dots$ | 8 | $\\dots$ | $A$ | $\\dots$ |",
+    choices: ["$-16$", "$16$", "$-8$", "$8$"],
+    answer: "$-16$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-2, y=8 \\text{ より } 8 = a \\times (-2) \\text{ だから } a = -4 \\\\ y = -4x \\\\ x=4 \\text{ を代入して、} y = -4 \\times 4 = -16 \\\\ A = -16 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、対応する$x, y$の値が表のようになっている。表の$B$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | 3 | $\\dots$ | $B$ | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | -6 | $\\dots$ | 9 | $\\dots$ |",
+    choices: ["-2", "2", "-18", "18"],
+    answer: "-2",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=3, y=-6 \\text{ より } -6 = \\frac{a}{3} \\text{ だから } a = -18 \\\\ y = \\frac{-18}{x} \\\\ y=9 \\text{ を代入して、} 9 = \\frac{-18}{x} \\\\ 9x = -18 \\\\ x = -2 \\\\ B = -2 \\end{aligned}"
+  },
+  {
+    question: "ばねののびは、つるしたおもりの重さに比例する。あるばねに$10$gのおもりをつるしたら$2$cmのびた。$25$gのおもりをつるすと何cmのびるか。",
+    choices: ["5cm", "2.5cm", "10cm", "20cm"],
+    answer: "5cm",
+    process: "\\begin{aligned} \\text{のびを } y \\text{ cm、重さを } x \\text{ g とすると、} y = ax \\\\ x=10, y=2 \\text{ より } 2 = a \\times 10 \\text{ だから } a = \\frac{2}{10} = \\frac{1}{5} \\\\ y = \\frac{1}{5}x \\\\ x=25 \\text{ を代入して、} y = \\frac{1}{5} \\times 25 = 5 \\\\ \\text{答え: } & 5 \\text{ cm} \\end{aligned}"
+  },
+  {
+    question: "面積が$36 \\text{ cm}^2$の長方形で、縦の長さを$x$cm、横の長さを$y$cmとする。$x=9$のときの$y$の値を求めなさい。",
+    choices: ["4cm", "36cm", "324cm", "9cm"],
+    answer: "4cm",
+    process: "\\begin{aligned} \\text{長方形の面積} = \\text{縦} \\times \\text{横} \\\\ 36 = x \\times y \\\\ y = \\frac{36}{x} \\\\ x=9 \\text{ を代入して、} y = \\frac{36}{9} = 4 \\\\ \\text{答え: } & 4 \\text{ cm} \\end{aligned}"
+  },
+  {
+    question: "比例 $y=\\frac{2}{3}x$ のグラフ上の点で、$x$座標が$6$である点の$y$座標を求めなさい。",
+    choices: ["4", "6", "9", "2/3"],
+    answer: "4",
+    process: "\\begin{aligned} y = \\frac{2}{3}x \\text{ に } x=6 \\text{ を代入する。} \\\\ y = \\frac{2}{3} \\times 6 \\\\ y = 2 \\times 2 = 4 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{24}{x}$ のグラフ上の点で、$y$座標が$-8$である点の$x$座標を求めなさい。",
+    choices: ["-3", "3", "-192", "192"],
+    answer: "-3",
+    process: "\\begin{aligned} y = \\frac{24}{x} \\text{ に } y=-8 \\text{ を代入する。} \\\\ -8 = \\frac{24}{x} \\\\ -8x = 24 \\\\ x = \\frac{24}{-8} = -3 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=1$のとき$y=-1$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=-x$", "$y=x$", "$y=-1$", "$y=1$"],
+    answer: "$y=-x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=1, y=-1 \\text{ を代入すると、} \\\\ -1 = a \\times 1 \\\\ a = -1 \\\\ \\text{よって、} y = -x \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=-1$のとき$y=-1$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=\\frac{1}{x}$", "$y=-\\frac{1}{x}$", "$y=x$", "$y=-x$"],
+    answer: "$y=\\frac{1}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-1, y=-1 \\text{ を代入すると、} \\\\ -1 = \\frac{a}{-1} \\\\ a = (-1) \\times (-1) = 1 \\\\ \\text{よって、} y = \\frac{1}{x} \\end{aligned}"
+  },
+   {
+    question: "$y=2x$のグラフ上の点を選びなさい。",
+    choices: ["$(3, 6)$", "$(6, 3)$", "$(3, 5)$", "$(2, 1)$"],
+    answer: "$(3, 6)$",
+    process: "$y=2x$ に各点の座標を代入して確認する。\\\\ $(3, 6)$: $6 = 2 \\times 3$ (正しい)\\\\ $(6, 3)$: $3 \\neq 2 \\times 6$ \\\\ $(3, 5)$: $5 \\neq 2 \\times 3$ \\\\ $(2, 1)$: $1 \\neq 2 \\times 2$"
+  },
+  {
+    question: "$y=-\\frac{12}{x}$のグラフ上の点を選びなさい。",
+    choices: ["$(-4, 3)$", "$(4, 3)$", "$(-3, -4)$", "$(1, 12)$"],
+    answer: "$(-4, 3)$",
+    process: "$y=-\\frac{12}{x}$ に各点の座標を代入して確認する。\\\\ $(-4, 3)$: $3 = -\\frac{12}{-4}$ (正しい)\\\\ $(4, 3)$: $3 \\neq -\\frac{12}{4}$ \\\\ $(-3, -4)$: $-4 \\neq -\\frac{12}{-3}$ \\\\ $(1, 12)$: $12 \\neq -\\frac{12}{1}$"
+  },
+  {
+    question: "比例 $y=ax$ のグラフが点 $(2, 8)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=4$", "$a=16$", "$a=\\frac{1}{4}$", "$a=6$"],
+    answer: "$a=4$",
+    process: "\\begin{aligned} y = ax \\text{ に } x=2, y=8 \\text{ を代入する。} \\\\ 8 = a \\times 2 \\\\ a = \\frac{8}{2} = 4 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフが点 $(3, -5)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=-15$", "$a=15$", "$a=-\\frac{5}{3}$", "$a=\\frac{3}{5}$"],
+    answer: "$a=-15$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ に } x=3, y=-5 \\text{ を代入する。} \\\\ -5 = \\frac{a}{3} \\\\ a = -5 \\times 3 = -15 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=10$のとき$y=2$である。比例定数を求めなさい。",
+    choices: ["$\\frac{1}{5}$", "$5$", "$20$", "$8$"],
+    answer: "$\\frac{1}{5}$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=10, y=2 \\text{ を代入すると、} \\\\ 2 = a \\times 10 \\\\ a = \\frac{2}{10} = \\frac{1}{5} \\end{aligned}"
+  },
+  // --- 【2番目が正解の問題】 (25問) ---
+  {
+    question: "$y$は$x$に比例し、$x=4$のとき$y=8$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=4x$", "$y=2x$", "$y=\\frac{1}{2}x$", "$y=32x$"],
+    answer: "$y=2x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=4, y=8 \\text{ を代入すると、} \\\\ 8 = a \\times 4 \\\\ a = 2 \\\\ \\text{よって、} y = 2x \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=2$のとき$y=9$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=\\frac{9}{2x}$", "$y=\\frac{18}{x}$", "$y=\\frac{2}{9x}$", "$y=18x$"],
+    answer: "$y=\\frac{18}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=2, y=9 \\text{ を代入すると、} \\\\ 9 = \\frac{a}{2} \\\\ a = 9 \\times 2 = 18 \\\\ \\text{よって、} y = \\frac{18}{x} \\end{aligned}"
+  },
+  {
+    question: "$y=-3x$について、$x=-5$のときの$y$の値を求めなさい。",
+    choices: ["$y=-15$", "$y=15$", "$y=-8$", "$y=2$"],
+    answer: "$y=15$",
+    process: "\\begin{aligned} y = -3x \\text{ に } x=-5 \\text{ を代入する。} \\\\ y = -3 \\times (-5) \\\\ y = 15 \\end{aligned}"
+  },
+  {
+    question: "$y=\\frac{-24}{x}$について、$x=4$のときの$y$の値を求めなさい。",
+    choices: ["$y=6$", "$y=-6$", "$y=-96$", "$y=96$"],
+    answer: "$y=-6$",
+    process: "\\begin{aligned} y = \\frac{-24}{x} \\text{ に } x=4 \\text{ を代入する。} \\\\ y = \\frac{-24}{4} \\\\ y = -6 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=5$のとき$y=-10$である。$x=-1$のときの$y$の値を求めなさい。",
+    choices: ["$y=-2$", "$y=2$", "$y=-10$", "$y=10$"],
+    answer: "$y=2$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=5, y=-10 \\text{ より } -10 = a \\times 5 \\text{ だから } a = -2 \\\\ y = -2x \\\\ x=-1 \\text{ を代入して、} y = -2 \\times (-1) = 2 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=-6$のとき$y=3$である。$x=9$のときの$y$の値を求めなさい。",
+    choices: ["$y=-18$", "$y=-2$", "$y=2$", "$y=18$"],
+    answer: "$y=-2$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-6, y=3 \\text{ より } 3 = \\frac{a}{-6} \\text{ だから } a = -18 \\\\ y = \\frac{-18}{x} \\\\ x=9 \\text{ を代入して、} y = \\frac{-18}{9} = -2 \\end{aligned}"
+  },
+  {
+    question: "$y$が$x$に比例するものを$y=ax$の形で表したとき、$a$にあたる部分を何というか。",
+    choices: ["傾き", "比例定数", "切片", "変数"],
+    answer: "比例定数",
+    process: "$y=ax$ における $a$ を比例定数という。"
+  },
+  {
+    question: "$y$が$x$に反比例するものを$y=\\frac{a}{x}$の形で表したとき、$a$にあたる部分を何というか。",
+    choices: ["傾き", "比例定数", "切片", "変数"],
+    answer: "比例定数",
+    process: "$y=\\frac{a}{x}$ における $a$ を比例定数という。"
+  },
+  {
+    question: "比例 $y=2x$ のグラフについて、正しい記述を選びなさい。",
+    choices: ["原点を通り、右下がりの直線", "原点を通り、右上がりの直線", "原点を通らない、右上がりの直線", "双曲線"],
+    answer: "原点を通り、右上がりの直線",
+    process: "比例 $y=ax$ のグラフは原点を通る直線である。\\\\ 比例定数 $a=2$ が正なので、グラフは右上がりになる。"
+  },
+  {
+    question: "反比例 $y=-\\frac{4}{x}$ のグラフについて、正しい記述を選びなさい。",
+    choices: ["第1象限と第3象限にある", "第2象限と第4象限にある", "原点を通る", "右上がりの直線"],
+    answer: "第2象限と第4象限にある",
+    process: "反比例 $y=\\frac{a}{x}$ のグラフは双曲線である。\\\\ 比例定数 $a=-4$ が負なので、グラフは第2象限と第4象限にある。"
+  },
+  {
+    question: "点$(-4, -8)$を通る比例のグラフの式を求めなさい。",
+    choices: ["$y=-2x$", "$y=2x$", "$y=\\frac{1}{2}x$", "$y=32x$"],
+    answer: "$y=2x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-4, y=-8 \\text{ を代入すると、} \\\\ -8 = a \\times (-4) \\\\ a = 2 \\\\ \\text{よって、} y = 2x \\end{aligned}"
+  },
+  {
+    question: "点$(5, -1)$を通る反比例のグラフの式を求めなさい。",
+    choices: ["$y=\\frac{5}{x}$", "$y=-\\frac{5}{x}$", "$y=-\\frac{1}{5x}$", "$y=\\frac{1}{5x}$"],
+    answer: "$y=-\\frac{5}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=5, y=-1 \\text{ を代入すると、} \\\\ -1 = \\frac{a}{5} \\\\ a = -1 \\times 5 = -5 \\\\ \\text{よって、} y = -\\frac{5}{x} \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | 3 | $\\dots$ | $A$ | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | 12 | $\\dots$ | 20 | $\\dots$ |",
+    choices: ["4", "5", "60", "8"],
+    answer: "5",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=3, y=12 \\text{ より } 12 = a \\times 3 \\text{ だから } a = 4 \\\\ y = 4x \\\\ y=20 \\text{ を代入して、} 20 = 4x \\\\ x = 5 \\\\ A = 5 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、対応する$x, y$の値が表のようになっている。表の$B$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | -4 | $\\dots$ | 8 | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | 6 | $\\dots$ | $B$ | $\\dots$ |",
+    choices: ["-12", "-3", "3", "-24"],
+    answer: "-3",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-4, y=6 \\text{ より } 6 = \\frac{a}{-4} \\text{ だから } a = -24 \\\\ y = \\frac{-24}{x} \\\\ x=8 \\text{ を代入して、} y = \\frac{-24}{8} = -3 \\\\ B = -3 \\end{aligned}"
+  },
+  {
+    question: "100kmの道のりを時速$x$kmで進むときにかかる時間を$y$時間とする。$y$を$x$の式で表しなさい。",
+    choices: ["$y=100x$", "$y=\\frac{100}{x}$", "$y=x+100$", "$y=100-x$"],
+    answer: "$y=\\frac{100}{x}$",
+    process: "\\begin{aligned} \\text{時間} = \frac{\\text{道のり}}{\\text{速さ}} \\\\ y = \\frac{100}{x} \end{aligned}"
+  },
+  {
+    question: "1辺が$x$cmの正方形の周の長さを$y$cmとする。$x=5$のときの$y$の値を求めなさい。",
+    choices: ["25cm", "20cm", "10cm", "5cm"],
+    answer: "20cm",
+    process: "\\begin{aligned} y = 4x \\\\ x=5 \\text{ を代入して、} y = 4 \\times 5 = 20 \\\\ \\text{答え: } & 20 \\text{ cm} \\end{aligned}"
+  },
+  {
+    question: "比例 $y=-5x$ のグラフ上の点で、$y$座標が$10$である点の$x$座標を求めなさい。",
+    choices: ["50", "-2", "2", "-50"],
+    answer: "-2",
+    process: "\\begin{aligned} y = -5x \\text{ に } y=10 \\text{ を代入する。} \\\\ 10 = -5x \\\\ x = \\frac{10}{-5} = -2 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{-15}{x}$ のグラフ上の点で、$x$座標が$3$である点の$y$座標を求めなさい。",
+    choices: ["5", "-5", "-45", "45"],
+    answer: "-5",
+    process: "\\begin{aligned} y = \\frac{-15}{x} \\text{ に } x=3 \\text{ を代入する。} \\\\ y = \\frac{-15}{3} = -5 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=2$のとき$y=-8$である。比例定数を求めなさい。",
+    choices: ["$4$", "$-4$", "$-16$", "$-6$"],
+    answer: "$-4$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=2, y=-8 \\text{ を代入すると、} \\\\ -8 = a \\times 2 \\\\ a = -4 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=5$のとき$y=4$である。比例定数を求めなさい。",
+    choices: ["$\\frac{4}{5}$", "$20$", "$1$", "$9$"],
+    answer: "$20$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=5, y=4 \\text{ を代入すると、} \\\\ 4 = \\frac{a}{5} \\\\ a = 4 \\times 5 = 20 \\end{aligned}"
+  },
+  {
+    question: "$y=-3x$のグラフ上の点を選びなさい。",
+    choices: ["$(2, 6)$", "$(-2, 6)$", "$(-2, -6)$", "$(6, -2)$"],
+    answer: "$(-2, 6)$",
+    process: "$y=-3x$ に各点の座標を代入して確認する。\\\\ $(2, 6)$: $6 \\neq -3 \\times 2$ \\\\ $(-2, 6)$: $6 = -3 \\times (-2)$ (正しい)\\\\ $(-2, -6)$: $-6 \\neq -3 \\times (-2)$ \\\\ $(6, -2)$: $-2 \\neq -3 \\times 6$"
+  },
+  {
+    question: "$y=\\frac{8}{x}$のグラフ上の点を選びなさい。",
+    choices: ["$(2, -4)$", "$(4, 2)$", "$(-4, -4)$", "$(8, 8)$"],
+    answer: "$(4, 2)$",
+    process: "$y=\\frac{8}{x}$ に各点の座標を代入して確認する。\\\\ $(2, -4)$: $-4 \\neq \\frac{8}{2}$ \\\\ $(4, 2)$: $2 = \\frac{8}{4}$ (正しい)\\\\ $(-4, -4)$: $-4 \\neq \\frac{8}{-4}$ \\\\ $(8, 8)$: $8 \\neq \\frac{8}{8}$"
+  },
+  {
+    question: "比例 $y=ax$ のグラフが点 $(-1, 3)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=3$", "$a=-3$", "$a=-\\frac{1}{3}$", "$a=2$"],
+    answer: "$a=-3$",
+    process: "\\begin{aligned} y = ax \\text{ に } x=-1, y=3 \\text{ を代入する。} \\\\ 3 = a \\times (-1) \\\\ a = -3 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフが点 $(-6, -2)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=3$", "$a=12$", "$a=\\frac{1}{3}$", "$a=-8$"],
+    answer: "$a=12$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ に } x=-6, y=-2 \\text{ を代入する。} \\\\ -2 = \\frac{a}{-6} \\\\ a = (-2) \\times (-6) = 12 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=-6$のとき$y=-2$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=3x$", "$y=\\frac{1}{3}x$", "$y=-\frac{1}{3}x$", "$y=12x$"],
+    answer: "$y=\\frac{1}{3}x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-6, y=-2 \\text{ を代入すると、} \\\\ -2 = a \\times (-6) \\\\ a = \\frac{-2}{-6} = \\frac{1}{3} \\\\ \\text{よって、} y = \\frac{1}{3}x \\end{aligned}"
+  },
+  // --- 【3番目が正解の問題】 (25問) ---
+  {
+    question: "$y$は$x$に比例し、$x=10$のとき$y=5$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=2x$", "$y=5x$", "$y=\\frac{1}{2}x$", "$y=50x$"],
+    answer: "$y=\\frac{1}{2}x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=10, y=5 \\text{ を代入すると、} \\\\ 5 = a \\times 10 \\\\ a = \\frac{5}{10} = \\frac{1}{2} \\\\ \\text{よって、} y = \\frac{1}{2}x \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=-4$のとき$y=5$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=\\frac{20}{x}$", "$y=-\\frac{5}{4x}$", "$y=-\\frac{20}{x}$", "$y=\\frac{4}{5x}$"],
+    answer: "$y=-\\frac{20}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-4, y=5 \\text{ を代入すると、} \\\\ 5 = \\frac{a}{-4} \\\\ a = 5 \\times (-4) = -20 \\\\ \\text{よって、} y = -\\frac{20}{x} \\end{aligned}"
+  },
+  {
+    question: "$y=\\frac{1}{4}x$について、$x=12$のときの$y$の値を求めなさい。",
+    choices: ["$y=48$", "$y=16$", "$y=3$", "$y=8$"],
+    answer: "$y=3$",
+    process: "\\begin{aligned} y = \\frac{1}{4}x \\text{ に } x=12 \\text{ を代入する。} \\\\ y = \\frac{1}{4} \\times 12 \\\\ y = 3 \\end{aligned}"
+  },
+  {
+    question: "$y=\\frac{30}{x}$について、$x=-5$のときの$y$の値を求めなさい。",
+    choices: ["$y=6$", "$y=150$", "$y=-6$", "$y=-150$"],
+    answer: "$y=-6$",
+    process: "\\begin{aligned} y = \\frac{30}{x} \\text{ に } x=-5 \\text{ を代入する。} \\\\ y = \\frac{30}{-5} \\\\ y = -6 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=6$のとき$y=2$である。$x=-9$のときの$y$の値を求めなさい。",
+    choices: ["$y=3$", "$y=-3$", "$y=-3$", "$y=18$"],
+    answer: "$y=-3$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=6, y=2 \\text{ より } 2 = a \\times 6 \\text{ だから } a = \\frac{1}{3} \\\\ y = \\frac{1}{3}x \\\\ x=-9 \\text{ を代入して、} y = \\frac{1}{3} \\times (-9) = -3 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=-2$のとき$y=-8$である。$x=4$のときの$y$の値を求めなさい。",
+    choices: ["$y=-4$", "$y=16$", "$y=4$", "$y=-32$"],
+    answer: "$y=4$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-2, y=-8 \\text{ より } -8 = \\frac{a}{-2} \\text{ だから } a = 16 \\\\ y = \\frac{16}{x} \\\\ x=4 \\text{ を代入して、} y = \\frac{16}{4} = 4 \\end{aligned}"
+  },
+  {
+    question: "比例の関係 $y=ax$ のグラフは、必ずどこを通るか。",
+    choices: ["点(1, 1)", "点(0, a)", "原点(0, 0)", "点(a, 1)"],
+    answer: "原点(0, 0)",
+    process: "$y=ax$ に $x=0$ を代入すると $y=a \\times 0 = 0$ となるため、必ず原点(0, 0)を通る。"
+  },
+  {
+    question: "反比例の関係 $y=\\frac{a}{x}$ (ただし $a \\neq 0$) のグラフはどのような曲線か。",
+    choices: ["放物線", "直線", "双曲線", "円"],
+    answer: "双曲線",
+    process: "反比例 $y=\\frac{a}{x}$ のグラフは、原点について対称な一対の曲線となり、これを双曲線という。"
+  },
+  {
+    question: "比例 $y=-\\frac{1}{2}x$ のグラフについて、$x$の値が2増加すると、$y$の値はいくつ変化するか。",
+    choices: ["2減少する", "1増加する", "1減少する", "2増加する"],
+    answer: "1減少する",
+    process: "比例 $y=ax$ では、$x$が1増加すると$y$は$a$変化する。\\\\ $a=-\\frac{1}{2}$ なので、$x$が1増加すると$y$は $-\\frac{1}{2}$ 変化する。\\\\ $x$が2増加すると、$y$は $-\\frac{1}{2} \\times 2 = -1$ 変化する。つまり1減少する。"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフは、$a>0$ のとき、どの象限を通るか。",
+    choices: ["第2象限と第4象限", "第1象限と第2象限", "第1象限と第3象限", "第3象限と第4象限"],
+    answer: "第1象限と第3象限",
+    process: "$a>0$ のとき、$x>0$ ならば $y=\\frac{a}{x}>0$、$x<0$ ならば $y=\\frac{a}{x}<0$ となる。\\\\ よって、グラフは第1象限 ($x>0, y>0$) と第3象限 ($x<0, y<0$) を通る。"
+  },
+  {
+    question: "点$(5, 1)$を通る比例のグラフの式を求めなさい。",
+    choices: ["$y=5x$", "$y=x+4$", "$y=\\frac{1}{5}x$", "$y=x-4$"],
+    answer: "$y=\\frac{1}{5}x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=5, y=1 \\text{ を代入すると、} \\\\ 1 = a \\times 5 \\\\ a = \\frac{1}{5} \\\\ \\text{よって、} y = \\frac{1}{5}x \\end{aligned}"
+  },
+  {
+    question: "点$(\\frac{1}{2}, 6)$を通る反比例のグラフの式を求めなさい。",
+    choices: ["$y=\\frac{12}{x}$", "$y=12x$", "$y=\\frac{3}{x}$", "$y=3x$"],
+    answer: "$y=\\frac{3}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=\\frac{1}{2}, y=6 \\text{ を代入すると、} \\\\ 6 = \\frac{a}{\\frac{1}{2}} \\\\ 6 = 2a \\\\ a = 3 \\\\ \\text{よって、} y = \\frac{3}{x} \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | -5 | $\\dots$ | $A$ | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | 10 | $\\dots$ | -6 | $\\dots$ |",
+    choices: ["-12", "12", "3", "-3"],
+    answer: "3",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-5, y=10 \\text{ より } 10 = a \\times (-5) \\text{ だから } a = -2 \\\\ y = -2x \\\\ y=-6 \\text{ を代入して、} -6 = -2x \\\\ x = 3 \\\\ A = 3 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、対応する$x, y$の値が表のようになっている。表の$B$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | 2 | $\\dots$ | -10 | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | -5 | $\\dots$ | $B$ | $\\dots$ |",
+    choices: ["-1", "50", "1", "-50"],
+    answer: "1",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=2, y=-5 \\text{ より } -5 = \\frac{a}{2} \\text{ だから } a = -10 \\\\ y = \\frac{-10}{x} \\\\ x=-10 \\text{ を代入して、} y = \\frac{-10}{-10} = 1 \\\\ B = 1 \\end{aligned}"
+  },
+  {
+    question: "1本80円のペンを$x$本買ったときの代金を$y$円とする。$y$を$x$の式で表しなさい。",
+    choices: ["$y=x+80$", "$y=\\frac{80}{x}$", "$y=80x$", "$y=80-x$"],
+    answer: "$y=80x$",
+    process: "\\begin{aligned} \\text{代金} = \\text{単価} \\times \\text{本数} \\\\ y = 80 \\times x \\\\ y = 80x \end{aligned}"
+  },
+  {
+    question: "$12$L入る空の水そうに毎分$x$Lの割合で水を入れると$y$分で満水になる。$y$を$x$の式で表しなさい。",
+    choices: ["$y=12+x$", "$y=12x$", "$y=\\frac{12}{x}$", "$y=x-12$"],
+    answer: "$y=\\frac{12}{x}$",
+    process: "\\begin{aligned} \\text{満水になるまでの時間} = \frac{\\text{水そうの容量}}{\\text{毎分の量}} \\\\ y = \\frac{12}{x} \end{aligned}"
+  },
+  {
+    question: "比例 $y=ax$ のグラフは、$a$ の絶対値が大きいほどどうなるか。",
+    choices: ["$x$軸に近づく", "$y$軸から離れる", "$y$軸に近づく", "変化しない"],
+    answer: "$y$軸に近づく",
+    process: "比例 $y=ax$ のグラフの傾きは $a$ である。$a$ の絶対値 $|a|$ が大きいほど、グラフの傾きは急になり、$y$軸に近づく。"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフ上の点で、$x$座標と$y$座標がともに整数となる点は、比例定数 $a$ の何と関係があるか。",
+    choices: ["倍数", "素因数", "約数", "公倍数"],
+    answer: "約数",
+    process: "$y=\\frac{a}{x}$ より $xy=a$。$x, y$ がともに整数であるためには、$x$ と $y$ は $a$ の約数である必要がある（符号も含む）。"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=1$のとき$y=5$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=x+4$", "$y=\\frac{5}{x}$", "$y=5x$", "$y=x$"],
+    answer: "$y=5x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=1, y=5 \\text{ を代入すると、} \\\\ 5 = a \\times 1 \\\\ a = 5 \\\\ \\text{よって、} y = 5x \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=1$のとき$y=-3$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=-3$", "$y=x-4$", "$y=-\\frac{3}{x}$", "$y=-3x$"],
+    answer: "$y=-\\frac{3}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=1, y=-3 \\text{ を代入すると、} \\\\ -3 = \\frac{a}{1} \\\\ a = -3 \\\\ \\text{よって、} y = -\\frac{3}{x} \\end{aligned}"
+  },
+   {
+    question: "$y=\\frac{1}{2}x$のグラフ上の点を選びなさい。",
+    choices: ["$(1, 2)$", "$(2, 4)$", "$(4, 2)$", "$(2, \\frac{1}{2})$"],
+    answer: "$(4, 2)$",
+    process: "$y=\\frac{1}{2}x$ に各点の座標を代入して確認する。\\\\ $(1, 2)$: $2 \\neq \\frac{1}{2} \\times 1$ \\\\ $(2, 4)$: $4 \\neq \\frac{1}{2} \\times 2$ \\\\ $(4, 2)$: $2 = \\frac{1}{2} \\times 4$ (正しい)\\\\ $(2, \\frac{1}{2})$: $\\frac{1}{2} \\neq \\frac{1}{2} \\times 2$"
+  },
+  {
+    question: "$y=\\frac{-6}{x}$のグラフ上の点を選びなさい。",
+    choices: ["$(-2, -3)$", "$(6, 1)$", "$(2, -3)$", "$(3, 2)$"],
+    answer: "$(2, -3)$",
+    process: "$y=\\frac{-6}{x}$ に各点の座標を代入して確認する。\\\\ $(-2, -3)$: $-3 \\neq \\frac{-6}{-2}$ \\\\ $(6, 1)$: $1 \\neq \\frac{-6}{6}$ \\\\ $(2, -3)$: $-3 = \\frac{-6}{2}$ (正しい)\\\\ $(3, 2)$: $2 \\neq \\frac{-6}{3}$"
+  },
+  {
+    question: "比例 $y=ax$ のグラフが点 $(-3, 6)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=2$", "$a=3$", "$a=-2$", "$a=-18$"],
+    answer: "$a=-2$",
+    process: "\\begin{aligned} y = ax \\text{ に } x=-3, y=6 \\text{ を代入する。} \\\\ 6 = a \\times (-3) \\\\ a = \\frac{6}{-3} = -2 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフが点 $(4, 4)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=1$", "$a=8$", "$a=16$", "$a=4$"],
+    answer: "$a=16$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ に } x=4, y=4 \\text{ を代入する。} \\\\ 4 = \\frac{a}{4} \\\\ a = 4 \\times 4 = 16 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=4$のとき$y=-1$である。比例定数を求めなさい。",
+    choices: ["$4$", "$-4$", "$-\\frac{1}{4}$", "$\\frac{1}{4}$"],
+    answer: "$-\\frac{1}{4}$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=4, y=-1 \\text{ を代入すると、} \\\\ -1 = a \\times 4 \\\\ a = -\\frac{1}{4} \\end{aligned}"
+  },
+  // --- 【4番目が正解の問題】 (25問) ---
+  {
+    question: "$y$は$x$に比例し、$x=-1$のとき$y=4$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=4x$", "$y=-x+3$", "$y=\\frac{-4}{x}$", "$y=-4x$"],
+    answer: "$y=-4x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-1, y=4 \\text{ を代入すると、} \\\\ 4 = a \\times (-1) \\\\ a = -4 \\\\ \\text{よって、} y = -4x \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=6$のとき$y=1$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=6x$", "$y=x-5$", "$y=\\frac{1}{6}x$", "$y=\\frac{6}{x}$"],
+    answer: "$y=\\frac{6}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=6, y=1 \\text{ を代入すると、} \\\\ 1 = \\frac{a}{6} \\\\ a = 1 \\times 6 = 6 \\\\ \\text{よって、} y = \\frac{6}{x} \\end{aligned}"
+  },
+  {
+    question: "$y=0.5x$について、$x=8$のときの$y$の値を求めなさい。",
+    choices: ["$y=16$", "$y=8.5$", "$y=7.5$", "$y=4$"],
+    answer: "$y=4$",
+    process: "\\begin{aligned} y = 0.5x \\text{ に } x=8 \\text{ を代入する。} \\\\ y = 0.5 \\times 8 \\\\ y = 4 \\end{aligned}"
+  },
+  {
+    question: "$y=\\frac{-10}{x}$について、$x=-2$のときの$y$の値を求めなさい。",
+    choices: ["$y=-12$", "$y=20$", "$y=-5$", "$y=5$"],
+    answer: "$y=5$",
+    process: "\\begin{aligned} y = \\frac{-10}{x} \\text{ に } x=-2 \\text{ を代入する。} \\\\ y = \\frac{-10}{-2} \\\\ y = 5 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=-2$のとき$y=-6$である。$x=1$のときの$y$の値を求めなさい。",
+    choices: ["$y=-3$", "$y=6$", "$y=-6$", "$y=3$"],
+    answer: "$y=3$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-2, y=-6 \\text{ より } -6 = a \\times (-2) \\text{ だから } a = 3 \\\\ y = 3x \\\\ x=1 \\text{ を代入して、} y = 3 \\times 1 = 3 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=10$のとき$y=2$である。$x=5$のときの$y$の値を求めなさい。",
+    choices: ["$y=1$", "$y=20$", "$y=10$", "$y=4$"],
+    answer: "$y=4$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=10, y=2 \\text{ より } 2 = \\frac{a}{10} \\text{ だから } a = 20 \\\\ y = \\frac{20}{x} \\\\ x=5 \\text{ を代入して、} y = \\frac{20}{5} = 4 \\end{aligned}"
+  },
+  {
+    question: "次のア〜エのうち、$y$が$x$に比例しないものはどれか。 ア: $y=2x$ イ: $y=-x$ ウ: $y=\\frac{x}{3}$ エ: $y=x+1$",
+    choices: ["ア", "イ", "ウ", "エ"],
+    answer: "エ",
+    process: "比例の式は $y=ax$ ($a$は定数) の形。\\\\ ア: $a=2$ \\\\ イ: $a=-1$ \\\\ ウ: $a=\\frac{1}{3}$ \\\\ エ: $y=x+1$ は比例ではない。"
+  },
+  {
+    question: "次のア〜エのうち、$y$が$x$に反比例しないものはどれか。 ア: $y=\\frac{5}{x}$ イ: $y=-\\frac{1}{x}$ ウ: $xy=10$ エ: $y=\\frac{x}{2}$",
+    choices: ["ア", "イ", "ウ", "エ"],
+    answer: "エ",
+    process: "反比例の式は $y=\\frac{a}{x}$ ($a$は定数、 $a \\neq 0$) の形。\\\\ ア: $a=5$ \\\\ イ: $a=-1$ \\\\ ウ: $y=\\frac{10}{x}$ なので $a=10$ \\\\ エ: $y=\\frac{1}{2}x$ は比例。"
+  },
+  {
+    question: "比例 $y=ax$ のグラフの特徴として、間違っているものを選びなさい。",
+    choices: ["原点を通る", "直線である", "$a>0$なら右上がり", "$a<0$なら双曲線になる"],
+    answer: "$a<0$なら双曲線になる",
+    process: "比例 $y=ax$ のグラフは $a$ の符号に関わらず常に原点を通る直線である。双曲線になるのは反比例のグラフ。"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフの特徴として、正しいものを選びなさい。",
+    choices: ["必ず原点を通る", "$a>0$なら右上がり", "$a<0$なら第1,3象限を通る", "$x$軸、$y$軸と交わらない"],
+    answer: "$x$軸、$y$軸と交わらない",
+    process: "反比例 $y=\\frac{a}{x}$ ($a \\neq 0$) のグラフは双曲線であり、原点を通らず、$x$軸 ($y=0$)、$y$軸 ($x=0$) とも交わらない。"
+  },
+  {
+    question: "点$(-2, 10)$を通る比例のグラフの式を求めなさい。",
+    choices: ["$y=5x$", "$y=-20x$", "$y=-\\frac{1}{5}x$", "$y=-5x$"],
+    answer: "$y=-5x$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=-2, y=10 \\text{ を代入すると、} \\\\ 10 = a \\times (-2) \\\\ a = -5 \\\\ \\text{よって、} y = -5x \\end{aligned}"
+  },
+  {
+    question: "点$(-3, -6)$を通る反比例のグラフの式を求めなさい。",
+    choices: ["$y=\\frac{2}{x}$", "$y=2x$", "$y=-\\frac{18}{x}$", "$y=\\frac{18}{x}$"],
+    answer: "$y=\\frac{18}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-3, y=-6 \\text{ を代入すると、} \\\\ -6 = \\frac{a}{-3} \\\\ a = (-6) \\times (-3) = 18 \\\\ \\text{よって、} y = \\frac{18}{x} \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | $A$ | $\\dots$ | 6 | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | 15 | $\\dots$ | 10 | $\\dots$ |",
+    choices: ["5", "25", "3", "9"],
+    answer: "9",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=6, y=10 \\text{ より } 10 = a \\times 6 \\text{ だから } a = \\frac{10}{6} = \\frac{5}{3} \\\\ y = \\frac{5}{3}x \\\\ y=15 \\text{ を代入して、} 15 = \\frac{5}{3}x \\\\ x = 15 \\times \\frac{3}{5} = 9 \\\\ A = 9 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、対応する$x, y$の値が表のようになっている。表の$B$にあてはまる数を求めなさい。\n| $x$ | $\\dots$ | 5 | $\\dots$ | -2 | $\\dots$ |\n|---|---|---|---|---|---|\n| $y$ | $\\dots$ | $B$ | $\\dots$ | 10 | $\\dots$ |",
+    choices: ["2", "-50", "8", "-4"],
+    answer: "-4",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-2, y=10 \\text{ より } 10 = \\frac{a}{-2} \\text{ だから } a = -20 \\\\ y = \\frac{-20}{x} \\\\ x=5 \\text{ を代入して、} y = \\frac{-20}{5} = -4 \\\\ B = -4 \\end{aligned}"
+  },
+  {
+    question: "縦が$x$cm、横が$5$cmの長方形の面積を$y \\text{ cm}^2$とする。$x=3$のときの$y$の値を求めなさい。",
+    choices: ["$8 \\text{ cm}^2$", "$25 \\text{ cm}^2$", "$35 \\text{ cm}^2$", "$15 \\text{ cm}^2$"],
+    answer: "$15 \\text{ cm}^2$",
+    process: "\\begin{aligned} y = 5x \\\\ x=3 \\text{ を代入して、} y = 5 \\times 3 = 15 \\\\ \\text{答え: } & 15 \\text{ cm}^2 \\end{aligned}"
+  },
+  {
+    question: "歯数が$30$の歯車Aが毎秒$x$回転するとき、これとかみ合って回る歯数が$20$の歯車Bは毎秒$y$回転する。$y$を$x$の式で表しなさい。",
+    choices: ["$y=20x$", "$y=30x$", "$y=\\frac{2}{3}x$", "$y=\\frac{3}{2}x$"],
+    answer: "$y=\\frac{3}{2}x$",
+    process: "\\begin{aligned} \\text{かみ合う歯の数は等しいので、} \\\\ 30 \\times x = 20 \\times y \\\\ 20y = 30x \\\\ y = \\frac{30}{20}x \\\\ y = \\frac{3}{2}x \\end{aligned}"
+  },
+  {
+    question: "比例 $y=-x$ のグラフ上の点で、$x$座標が$5$である点の$y$座標を求めなさい。",
+    choices: ["5", "1", "-1", "-5"],
+    answer: "-5",
+    process: "\\begin{aligned} y = -x \\text{ に } x=5 \\text{ を代入する。} \\\\ y = -(5) = -5 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{1}{x}$ のグラフ上の点で、$y$座標が$2$である点の$x$座標を求めなさい。",
+    choices: ["1", "-1", "2", "$\\frac{1}{2}$"],
+    answer: "$\\frac{1}{2}$",
+    process: "\\begin{aligned} y = \\frac{1}{x} \\text{ に } y=2 \\text{ を代入する。} \\\\ 2 = \\frac{1}{x} \\\\ 2x = 1 \\\\ x = \\frac{1}{2} \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に比例し、$x=3$のとき$y=3$である。比例定数を求めなさい。",
+    choices: ["$3$", "$9$", "$0$", "$1$"],
+    answer: "$1$",
+    process: "\\begin{aligned} y = ax \\text{ とおく。} \\\\ x=3, y=3 \\text{ を代入すると、} \\\\ 3 = a \\times 3 \\\\ a = 1 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=-2$のとき$y=6$である。比例定数を求めなさい。",
+    choices: ["$-3$", "$4$", "$8$", "$-12$"],
+    answer: "$-12$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=-2, y=6 \\text{ を代入すると、} \\\\ 6 = \\frac{a}{-2} \\\\ a = 6 \\times (-2) = -12 \\end{aligned}"
+  },
+   {
+    question: "$y=4x$のグラフ上の点を選びなさい。",
+    choices: ["$(4, 1)$", "$(1, -4)$", "$(-1, 4)$", "$(-1, -4)$"],
+    answer: "$(-1, -4)$",
+    process: "$y=4x$ に各点の座標を代入して確認する。\\\\ $(4, 1)$: $1 \\neq 4 \\times 4$ \\\\ $(1, -4)$: $-4 \\neq 4 \\times 1$ \\\\ $(-1, 4)$: $4 \\neq 4 \\times (-1)$ \\\\ $(-1, -4)$: $-4 = 4 \\times (-1)$ (正しい)"
+  },
+  {
+    question: "$y=\\frac{-1}{x}$のグラフ上の点を選びなさい。",
+    choices: ["$(1, 1)$", "$(-1, -1)$", "$(1, 0)$", "$(1, -1)$"],
+    answer: "$(1, -1)$",
+    process: "$y=-\\frac{1}{x}$ に各点の座標を代入して確認する。\\\\ $(1, 1)$: $1 \\neq -\\frac{1}{1}$ \\\\ $(-1, -1)$: $-1 \\neq -\\frac{1}{-1}$ \\\\ $(1, 0)$: $0 \\neq -\\frac{1}{1}$ \\\\ $(1, -1)$: $-1 = -\\frac{1}{1}$ (正しい)"
+  },
+  {
+    question: "比例 $y=ax$ のグラフが点 $(\\frac{1}{2}, 3)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=3$", "$a=\\frac{3}{2}$", "$a=\\frac{1}{6}$", "$a=6$"],
+    answer: "$a=6$",
+    process: "\\begin{aligned} y = ax \\text{ に } x=\\frac{1}{2}, y=3 \\text{ を代入する。} \\\\ 3 = a \\times \\frac{1}{2} \\\\ a = 3 \\times 2 = 6 \\end{aligned}"
+  },
+  {
+    question: "反比例 $y=\\frac{a}{x}$ のグラフが点 $(-1, 1)$ を通るとき、$a$ の値を求めなさい。",
+    choices: ["$a=1$", "$a=0$", "$a=-2$", "$a=-1$"],
+    answer: "$a=-1$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ に } x=-1, y=1 \\text{ を代入する。} \\\\ 1 = \\frac{a}{-1} \\\\ a = 1 \\times (-1) = -1 \\end{aligned}"
+  },
+  {
+    question: "$y$は$x$に反比例し、$x=8$のとき$y=\\frac{1}{2}$である。$y$を$x$の式で表しなさい。",
+    choices: ["$y=16x$", "$y=\\frac{16}{x}$", "$y=4x$", "$y=\\frac{4}{x}$"],
+    answer: "$y=\\frac{4}{x}$",
+    process: "\\begin{aligned} y = \\frac{a}{x} \\text{ とおく。} \\\\ x=8, y=\\frac{1}{2} \\text{ を代入すると、} \\\\ \\frac{1}{2} = \\frac{a}{8} \\\\ 2a = 8 \\\\ a = 4 \\\\ \\text{よって、} y = \\frac{4}{x} \\end{aligned}"
+  }
+];
+        // ===== グローバル変数定義 =====
+        const modeSelectionScreen = document.getElementById('mode-selection');
+        const quizMainScreen = document.getElementById('quiz-main');
+        const musouBackground = document.getElementById('musou-background');
+
+        const questionArea = document.getElementById('question-area');
+        const nextButton = document.getElementById('next-btn');
+        const resultsArea = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
+        const timerBar = document.getElementById('timer-bar');
+        const timerText = document.getElementById('timer-text');
+        
+        let selectedQuizData;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentMode = 'normal'; // 現在のモードを保存
+        
+        let timerInterval;
+        let timeLeft;
+        let TIME_LIMIT;
+        let WARNING_TIME;
+        
+        let totalSolveTime = 0;
+        let questionStartTime;
+
+        let currentRankSettings = {}; // ランク判定基準を保存
+
+        // ===== モード選択とクイズ開始の処理 =====
+        document.getElementById('normal-mode-btn').addEventListener('click', () => {
+            startGame({
+                mode: 'normal',
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 15,     // ノーマル 制限時間 (例)
+                warningTime: 5,      // ノーマル 警告時間 (例)
+                isMusou: false,
+                sRankTime: 40,  // Sランク基準 (例: 40秒)
+                aRankTime: 60,  // Aランク基準 (例: 60秒)
+                bRankTime: 90   // Bランク基準 (例: 90秒)
+            });
+        });
+
+        document.getElementById('musou-mode-btn').addEventListener('click', () => {
+            startGame({
+                mode: 'musou',
+                // ★ 3. モード別設定（ファイルごとに変える） ★
+                timeLimit: 7,      // 無双 制限時間 (例)
+                warningTime: 3,      // 無双 警告時間 (例)
+                isMusou: true,
+                sRankTime: 30,  // Sランク基準 (例: 30秒)
+                aRankTime: 45,  // Aランク基準 (例: 45秒)
+                bRankTime: 60   // Bランク基準 (例: 60秒)
+            });
+        });
+
+        function startGame(settings) {
+            currentMode = settings.mode; 
+            TIME_LIMIT = settings.timeLimit;
+            WARNING_TIME = settings.warningTime;
+            
+            currentRankSettings = {
+                sRankTime: settings.sRankTime,
+                aRankTime: settings.aRankTime,
+                bRankTime: settings.bRankTime
+            };
+
+            if (settings.isMusou) {
+                musouBackground.classList.remove('hidden');
+            }
+
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            const shuffledData = shuffleArray(fullQuizDataBank);
+            selectedQuizData = shuffledData.slice(0, 10);
+
+            modeSelectionScreen.classList.add('hidden');
+            quizMainScreen.classList.remove('hidden');
+
+            showQuestion();
+        }
+
+
+        // ===== タイマー関数 =====
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('warning');
+            document.body.classList.remove('timer-warning');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                timerBar.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+
+                if (timeLeft <= WARNING_TIME) {
+                    timerBar.classList.add('warning');
+                    document.body.classList.add('timer-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function timeUp() {
+            stopTimer();
+            totalSolveTime += TIME_LIMIT;
+
+            const choicesContainer = questionArea.querySelector('.choices');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
+
+            if(choicesContainer) {
+                choicesContainer.classList.add('answered');
+            }
+
+            feedbackMessage.textContent = "時間切れ💦";
+            feedbackMessage.classList.add('incorrect-feedback');
+            feedbackMessage.classList.remove('hidden');
+
+            katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+            processDisplay.classList.remove('hidden');
+
+            Array.from(choicesContainer.children).forEach(child => {
+                const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
+                if (choiceText === correctAnswer) {
+                     child.classList.add('correct');
+                }
+            });
+
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
+        function showQuestion() {
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+
+            // 選択肢のHTMLを生成（onclick属性には $ を除去したものを渡す）
+            const choicesHtml = currentQuestion.choices.map(choice => {
+                const onclickChoice = choice.replace(/\$/g, ''); // $ 除去
+                return `<div class="choice" onclick="selectAnswer(this, '${onclickChoice}')">${choice}</div>`;
+            }).join('');
+
+            // 問題エリアのHTMLを設定
+            questionArea.innerHTML = `
+                <div class="question-block">
+                    <div class="problem-text" id="problem-text"></div>
+                    <div class="choices">${choicesHtml}</div>
+                    <div class="feedback-area">
+                        <p id="feedback-message" class="hidden"></p>
+                        <div id="calculation-process" class="calculation-process hidden"></div>
+                    </div>
+                </div>
+            `;
+
+            // ★ 問題文の KaTeX レンダリング ($ 除去) ★
+            const problemTextElement = document.getElementById('problem-text');
+            // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
+            let questionKatexString = currentQuestion.question;
+            if (questionKatexString.startsWith('$') && questionKatexString.endsWith('$')) {
+                 questionKatexString = questionKatexString.slice(1, -1); 
+            } else {
+                 console.warn("Question text might be missing $ delimiters:", currentQuestion.question);
+            }
+
+            try {
+                katex.render(questionKatexString, problemTextElement, {
+                    throwOnError: true, // エラーがあればコンソールに出力
+                    displayMode: true  // 問題文は中央揃えのディスプレイモード
+                });
+            } catch (e) {
+                 // KaTeXレンダリングエラー時のフォールバック
+                 console.error("KaTeX render error on question:", currentQuestion.question, e);
+                 problemTextElement.textContent = currentQuestion.question; // 元のテキストを表示
+            }
+
+            // ★ 選択肢の KaTeX レンダリング ($ 除去) ★
+            const choiceElements = questionArea.querySelectorAll('.choice');
+            choiceElements.forEach(element => {
+                const originalText = element.textContent; // 元の $付きテキストを取得
+                 // slice(1, -1) で $ を除去しない場合のエラーチェックを追加
+                let katexString = originalText;
+                 if (katexString.startsWith('$') && katexString.endsWith('$')) {
+                     katexString = katexString.slice(1, -1); 
+                 } else {
+                     console.warn("Choice text might be missing $ delimiters:", originalText);
+                 }
+                
+                try {
+                    // 要素の中身をKaTeXでレンダリング（元のテキストは上書きされる）
+                    katex.render(katexString, element, {
+                        throwOnError: true, // エラーがあればコンソールに出力
+                        displayMode: false // 選択肢はインラインモード
+                    });
+                } catch (e) {
+                    // KaTeXレンダリングエラー時のフォールバック
+                    console.error("KaTeX render error on choice:", originalText, e);
+                    // エラーの場合は元のテキストのままにする（innerHTMLを上書きしない）
+                }
+            });
+
+            // タイマー開始
+            questionStartTime = Date.now();
+            startTimer();
+        }
+
+        function selectAnswer(element, selectedChoice) {
+            stopTimer();
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            totalSolveTime += timeTaken;
+
+            const choicesContainer = element.parentElement;
+            if (choicesContainer.classList.contains('answered')) return;
+            choicesContainer.classList.add('answered');
+
+            const currentQuestion = selectedQuizData[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer.replace(/\$/g, ''); // $ 除去
+
+            const feedbackMessage = document.getElementById('feedback-message');
+            const processDisplay = document.getElementById('calculation-process');
+
+            if (selectedChoice === correctAnswer) { 
+                score++;
+                element.classList.add('correct');
+                feedbackMessage.textContent = "正解💐";
+                feedbackMessage.classList.add('correct-feedback');
+            } else {
+                element.classList.add('incorrect');
+                feedbackMessage.textContent = "不正解💦";
+                feedbackMessage.classList.add('incorrect-feedback');
+                
+                katex.render(currentQuestion.process, processDisplay, { throwOnError: false, displayMode: true });
+                processDisplay.classList.remove('hidden');
+
+                 // 正解の選択肢をハイライト
+                Array.from(choicesContainer.children).forEach(child => {
+                    const choiceText = child.textContent.replace(/\$/g, ''); // $ 除去
+                    if (choiceText === correctAnswer) {
+                         child.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            
+            if (currentQuestionIndex < selectedQuizData.length - 1) {
+                nextButton.innerText = "次の問題へ";
+            } else {
+                nextButton.innerText = "結果を見る";
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            document.body.classList.remove('timer-warning');
+            if (currentQuestionIndex < selectedQuizData.length) {
+                showQuestion();
+                nextButton.classList.add('hidden');
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            document.querySelector('.timer-container').classList.add('hidden');
+            
+            const finalScore = score * 10;
+            const totalPoints = selectedQuizData.length * 10;
+            const totalSeconds = Math.round(totalSolveTime);
+
+            let rank = '';
+            let rankColor = '';
+            let rankName = '';
+
+            if (totalSeconds <= currentRankSettings.sRankTime) {
+                rank = '⭐️ Sランク ⭐️'; rankColor = '#ffc107';
+                rankName = 'S';
+            } else if (totalSeconds <= currentRankSettings.aRankTime) {
+                rank = '🌛 Aランク 🌛'; rankColor = '#6c757d';
+                rankName = 'A';
+            } else if (totalSeconds <= currentRankSettings.bRankTime) {
+                rank = '🌲 Bランク 🌲'; rankColor = '#cd7f32';
+                rankName = 'B';
+            } else {
+                rank = '💪 Cランク 💪'; rankColor = '#28a745';
+                rankName = 'C';
+            }
+            
+            // ★ 4. 達成状況（スター/クラウン）の保存処理 ★
+            
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // ★ ↓↓↓ この testId をファイルごとに変更してください ↓↓↓ ★
+            const thisTestId = "test11"; // 例: test4 なら "test4", test5 なら "test5"
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+            // ★ 5. 履歴キー（ファイルごとに変える） ★
+            const historyKey = 'algebraHistory'; // ★「文字式」用のキー
+
+            // --- 達成状況の保存ロジック ---
+            let achievements = JSON.parse(localStorage.getItem('quizAchievements')) || {};
+            const currentBest = achievements[thisTestId]; 
+            
+            let newLevel = ''; // このラウンドで達成したレベル
+            let shouldUpdate = false; // 保存を更新すべきか
+            let trophyMessage = ''; // ★ 表示するメッセージ用変数を追加
+
+            // 1. 満点かどうかをまず確認
+            if (finalScore === totalPoints) {
+                
+                // 2. 満点の場合、ランクを確認
+                if (rankName === 'S' || rankName === 'A') {
+                    newLevel = (currentMode === 'musou') ? 'musou' : 'normal';
+                } else {
+                    newLevel = 'apple';
+                }
+
+                // 3. 達成状況を更新 (格下げはしない)
+                if (newLevel === 'musou') {
+                    shouldUpdate = true;
+                } else if (newLevel === 'normal' && (currentBest !== 'musou')) {
+                    shouldUpdate = true;
+                } else if (newLevel === 'apple' && (currentBest !== 'musou' && currentBest !== 'normal')) {
+                    shouldUpdate = true;
+                }
+
+                if (shouldUpdate) {
+                    achievements[thisTestId] = newLevel;
+                    localStorage.setItem('quizAchievements', JSON.stringify(achievements));
+                    
+                    // ★ メッセージをセット ★
+                    if (newLevel === 'musou') {
+                        trophyMessage = '👑をゲットしました！';
+                    } else if (newLevel === 'normal') {
+                        trophyMessage = '⭐をゲットしました！';
+                    } else if (newLevel === 'apple') {
+                        trophyMessage = '🍎をゲットしました！';
+                    }
+                }
+            }
+            // --- 達成状況の保存ロジックここまで ---
+            
+            // --- 履歴保存処理 ---
+             const newResult = {
+                score: finalScore,
+                totalPoints: totalPoints,
+                time: totalSeconds,
+                rank: rankName, 
+                date: new Date().toLocaleString('ja-JP') 
+            };
+            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+            history.unshift(newResult);
+            localStorage.setItem(historyKey, JSON.stringify(history)); 
+            // --- 保存処理ここまで ---
+
+            resultsArea.classList.remove('hidden');
+            
+            const timeInfoDisplay = document.getElementById('time-info');
+            const rankInfoDisplay = document.getElementById('rank-info');
+            const trophyDisplay = document.getElementById('trophy-message'); // ★ 追加
+
+            scoreDisplay.textContent = `${finalScore}点 / ${totalPoints}点満点`;
+            timeInfoDisplay.textContent = `合計解答時間: ${totalSeconds}秒`;
+            rankInfoDisplay.textContent = rank; 
+            rankInfoDisplay.style.color = rankColor;
+            trophyDisplay.textContent = trophyMessage; // ★ 追加
+        }
+        
+    </script>
+
+</body>
+</html>
+
