@@ -394,22 +394,6 @@ const fullQuizDataBank = [
         }
 
         // ===== KaTeX 混在テキスト対応ヘルパ =====
-function renderInlineMathIn(rootEl) {
-  if (!window.renderMathInElement) {
-    console.warn('auto-render not found. Load ./katex/contrib/auto-render.min.js');
-    return;
-  }
-  renderMathInElement(rootEl, {
-    delimiters: [
-      { left: '$', right: '$', display: false },
-      { left: '\\(', right: '\\)', display: false },
-      { left: '\\[', right: '\\]', display: true },
-      { left: '$$', right: '$$', display: true }
-    ],
-    throwOnError: false
-  });
-}
-
 function renderInlineMathIn(rootEl){
   renderMathInElement(rootEl, {
     delimiters: [
@@ -444,15 +428,16 @@ function escapeForOnclick(raw) {
 function showQuestion() {
   const currentQuestion = selectedQuizData[currentQuestionIndex];
 
-  // --- 選択肢HTMLを生成：selectAnswer に渡す比較用は $ を除去した生文字列 ---
+  // --- 選択肢HTML（クリック比較用の生文字列は $ を除去） ---
   const choicesHtml = currentQuestion.choices.map(choice => {
-    const rawForCompare = choice.replace(/\$/g, ''); // クリック時の比較用
-    const safe = escapeForOnclick(rawForCompare);
-    // 表示側はそのまま（後で auto-render で $...$ を数式化）
+    const rawForCompare = choice.replace(/\$/g, '');
+    const safe = rawForCompare
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'");
     return `<div class="choice" onclick="selectAnswer(this, '${safe}')">${choice}</div>`;
   }).join('');
 
-  // --- 問題エリア構築 ---
+  // --- 画面組み立て ---
   questionArea.innerHTML = `
     <div class="question-block">
       <div class="problem-text" id="problem-text"></div>
@@ -464,41 +449,27 @@ function showQuestion() {
     </div>
   `;
 
-　// ★★★ ここに入れる（問題文のレンダリング）★★★
+  // ★ 問題文（HTML可）→ auto-render で $/$$/[]/() を数式化
   const problemTextElement = document.getElementById('problem-text');
-  problemTextElement.innerHTML = currentQuestion.question;   // ← innerHTML で挿入（$$…$$ 可）
-  renderInlineMathIn(problemTextElement);                     // ← auto-render で $/$$/[]/() を数式化
-
-  // --- 問題文：混在テキストをそのまま入れて auto-render ---
-  const problemTextElement = document.getElementById('problem-text');
-  // 元データ（$ を含む日本語混在文）をそのまま入れる
-  problemTextElement.textContent = currentQuestion.question;
+  problemTextElement.innerHTML = currentQuestion.question;   // ← innerHTML だけにする
   renderInlineMathIn(problemTextElement);
 
-  // --- 選択肢：混在テキスト（日本語＋数式）に対応して auto-render ---
+  // ★ 選択肢も混在テキスト想定で auto-render
   const choicesContainer = questionArea.querySelector('.choices');
   renderInlineMathIn(choicesContainer);
 
-  // --- 解説（calculation-process）：純粋数式ブロック or 混在テキストの両対応 ---
-  //    - 純粋数式ブロック（$$...$$, \[...\], \begin{aligned}... など）は katex.render()
-  //    - それ以外（文章混在）は auto-render で $...$ 部分のみ数式化
+  // ★ 解説：純数式ブロックは katex.render、混在は auto-render
   const processDisplay = document.getElementById('calculation-process');
   const proc = currentQuestion.process || '';
-
-  // いったん空に
   processDisplay.innerHTML = '';
-
   if (isPureMathBlock(proc)) {
     try {
-      // 純粋数式ブロック想定：displayMode でレンダリング
       katex.render(proc, processDisplay, { throwOnError: false, displayMode: true });
-    } catch (e) {
-      // 失敗時は混在扱いフォールバック
+    } catch {
       processDisplay.textContent = proc;
       renderInlineMathIn(processDisplay);
     }
   } else {
-    // 混在テキスト想定：素のテキストを入れて $...$ だけ数式化
     processDisplay.textContent = proc;
     renderInlineMathIn(processDisplay);
   }
