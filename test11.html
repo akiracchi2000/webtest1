@@ -1090,21 +1090,27 @@ const fullQuizDataBank = [
 const processDisplay = document.getElementById('calculation-process');
 const proc = currentQuestion.process || '';
 processDisplay.innerHTML = '';
+
 if (isPureMathBlock(proc)) {
   try {
     katex.render(proc, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
   } catch {
-    // フォールバック：改行を <br> に変換して auto-render
-    const html = proc.replace(/\\\\\s*/g, '<br>').replace(/\n/g, '<br>');
+    // フォールバック：改行を <br> に
+    const html = proc
+      .replace(/\\\\(?![a-zA-Z])/g, '<br>')  // 「\\」の直後が英字でないときだけ改行扱い
+      .replace(/\n/g, '<br>');
     processDisplay.innerHTML = html;
     renderInlineMathIn(processDisplay);
   }
 } else {
-  // ★ ここを修正：改行を <br> に変換してから HTML として入れる
-  const html = proc.replace(/\\\\\s*/g, '<br>').replace(/\n/g, '<br>');
+  // 文章ベース（数式は $...$ だけ）のときはこちら
+  const html = proc
+    .replace(/\\\\(?![a-zA-Z])/g, '<br>')    // \\neq や \\frac を壊さない
+    .replace(/\n/g, '<br>');
   processDisplay.innerHTML = html;
   renderInlineMathIn(processDisplay);
 }
+
 
       // タイマー開始
       questionStartTime = Date.now();
