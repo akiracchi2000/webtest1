@@ -226,7 +226,7 @@
 const fullQuizDataBank = [
   // --- 【1番目が正解の問題】 (25問) ---
   {
-    question:
+  question:
     "$y$は$x$に比例し、対応する$x, y$の値が表のようになっている。表の$A$にあてはまる数を求めなさい。"+
     "$$\\begin{array}{c|c|c|c|c|c}" +
     "x & \\cdots & -2 & \\cdots & 4 & \\cdots \\\\ \\hline " +
@@ -236,13 +236,11 @@ const fullQuizDataBank = [
   answer: "$-16$",
   process:
     "\\begin{aligned}" +
-    "y=ax\\\\ " +
-    "x=-2,\\;y=8\\;より\\;8=a\\times(-2)\\;だから\\;a=-4\\\\ " +
-    "y=-4x\\\\ " +
-    "x=4\\;を代入して、\\;y=-4\\times 4=-16\\\\ " +
-    "A=-16" +
+    "y=ax\\\\ x=-2,\\;y=8\\;より\\;8=a\\times(-2)\\;だから\\;a=-4\\\\ " +
+    "y=-4x\\\\ x=4\\;を代入して、\\;y=-4\\times 4=-16\\\\ A=-16" +
     "\\end{aligned}"
-  }
+}
+
 ];
         // ===== グローバル変数定義 =====
         const modeSelectionScreen = document.getElementById('mode-selection');
