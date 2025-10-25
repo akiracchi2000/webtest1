@@ -1084,21 +1084,25 @@ const fullQuizDataBank = [
       const choicesContainer = questionArea.querySelector('.choices');
       renderInlineMathIn(choicesContainer);
 
-      // 解説：純数式は katex.render、混在は auto-render
-      const processDisplay = document.getElementById('calculation-process');
-      const proc = currentQuestion.process || '';
-      processDisplay.innerHTML = '';
-      if (isPureMathBlock(proc)) {
-        try {
-          katex.render(proc, processDisplay, { throwOnError: false, displayMode: true });
-        } catch {
-          processDisplay.textContent = proc;
-          renderInlineMathIn(processDisplay);
-        }
-      } else {
-        processDisplay.textContent = proc;
-        renderInlineMathIn(processDisplay);
-      }
+      // ★ 解説：純数式ブロックは katex.render、混在は auto-render
+const processDisplay = document.getElementById('calculation-process');
+const proc = currentQuestion.process || '';
+processDisplay.innerHTML = '';
+if (isPureMathBlock(proc)) {
+  try {
+    katex.render(proc, processDisplay, { throwOnError: false, displayMode: true, fleqn: true });
+  } catch {
+    // フォールバック：改行を <br> に変換して auto-render
+    const html = proc.replace(/\\\\\s*/g, '<br>').replace(/\n/g, '<br>');
+    processDisplay.innerHTML = html;
+    renderInlineMathIn(processDisplay);
+  }
+} else {
+  // ★ ここを修正：改行を <br> に変換してから HTML として入れる
+  const html = proc.replace(/\\\\\s*/g, '<br>').replace(/\n/g, '<br>');
+  processDisplay.innerHTML = html;
+  renderInlineMathIn(processDisplay);
+}
 
       // タイマー開始
       questionStartTime = Date.now();
