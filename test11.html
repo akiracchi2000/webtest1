@@ -132,6 +132,28 @@
     overflow-x: auto; 
     -webkit-overflow-scrolling: touch; /* モバイルで滑らかスクロール */
   }
+        /* --- スマホではみ出す数式対策（①）--- */
+
+/* 1) 横スクロールを許可 */
+.problem-text,
+.calculation-process,
+.katex-display {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 2) 数式要素が親幅を超えないようにする */
+.katex-display > .katex {
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 3) スマホ時に少し縮める（任意） */
+@media (max-width: 640px) {
+  .problem-text { font-size: clamp(18px, 6vw, 28px); }
+  .choices .choice { font-size: clamp(14px, 4.2vw, 18px); }
+}
+
         .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .choice { display: block; background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: background-color 0.2s, transform 0.2s; border: 2px solid transparent; font-size: 1.2em; }
         .choice:hover { background-color: #d1d9e0; }
