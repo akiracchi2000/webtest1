@@ -1109,10 +1109,6 @@ const fullQuizDataBank = [
 
       // ★ 解説：純数式ブロックは katex.render、混在は auto-render
 const processDisplay = document.getElementById('calculation-process');
-const proc = currentQuestion.process || '';
-processDisplay.innerHTML = '';
-
-const processDisplay = document.getElementById('calculation-process');
 renderProcess(processDisplay, currentQuestion.process || '');
 
 
