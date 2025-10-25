@@ -383,19 +383,50 @@ const fullQuizDataBank = [
             nextButton.classList.remove('hidden');
         }
 
+        // ===== KaTeX 混在テキスト対応ヘルパ =====
+function renderInlineMathIn(rootEl) {
+  if (!window.renderMathInElement) {
+    console.warn('auto-render not found. Load ./katex/contrib/auto-render.min.js');
+    return;
+  }
+  renderMathInElement(rootEl, {
+    delimiters: [
+      { left: '$', right: '$', display: false },
+      { left: '\\(', right: '\\)', display: false },
+      { left: '\\[', right: '\\]', display: true },
+      { left: '$$', right: '$$', display: true }
+    ],
+    throwOnError: false
+  });
+}
+
+// 先頭が \begin{...} などの純粋数式ブロックかどうかの簡易判定
+function isPureMathBlock(str) {
+  const s = (str || '').trim();
+  return (
+    s.startsWith('$$') || s.startsWith('\\[') || s.startsWith('\\(') ||
+    s.startsWith('\\begin{') // \begin{aligned}, \begin{cases}, などを想定
+  );
+}
+
+// onclick 引数に渡すための最低限のエスケープ
+function escapeForOnclick(raw) {
+  return raw
+    .replace(/\\/g, '\\\\') // バックスラッシュ
+    .replace(/'/g, "\\'");  // シングルクォート
+}
+
         // ===== クイズ本体の関数 (★ テンプレートA用: $除去ロジックあり ★) =====
-        function showQuestion() {
+        // ====== 問題表示（日本語＋数式の混在に全面対応）======
+function showQuestion() {
   const currentQuestion = selectedQuizData[currentQuestionIndex];
 
-  // --- 選択肢HTMLを生成（onclick には $ を除いた生文字列を安全に渡す）---
+  // --- 選択肢HTMLを生成：selectAnswer に渡す比較用は $ を除去した生文字列 ---
   const choicesHtml = currentQuestion.choices.map(choice => {
-    // $ を除去して selectAnswer の第2引数に渡す
-    const raw = choice.replace(/\$/g, '');
-    // onclick 引数用に最低限のエスケープ
-    const safeForOnclick = raw
-      .replace(/\\/g, '\\\\')  // バックスラッシュ
-      .replace(/'/g, "\\'");   // シングルクォート
-    return `<div class="choice" onclick="selectAnswer(this, '${safeForOnclick}')">${choice}</div>`;
+    const rawForCompare = choice.replace(/\$/g, ''); // クリック時の比較用
+    const safe = escapeForOnclick(rawForCompare);
+    // 表示側はそのまま（後で auto-render で $...$ を数式化）
+    return `<div class="choice" onclick="selectAnswer(this, '${safe}')">${choice}</div>`;
   }).join('');
 
   // --- 問題エリア構築 ---
@@ -410,43 +441,44 @@ const fullQuizDataBank = [
     </div>
   `;
 
-  // --- 問題文：auto-render に任せる（日本語＋$...$混在対応）---
+  // --- 問題文：混在テキストをそのまま入れて auto-render ---
   const problemTextElement = document.getElementById('problem-text');
-  // そのままテキストとして入れて、要素内の $...$ だけ KaTeX に変換
+  // 元データ（$ を含む日本語混在文）をそのまま入れる
   problemTextElement.textContent = currentQuestion.question;
+  renderInlineMathIn(problemTextElement);
 
-  if (window.renderMathInElement) {
-    renderMathInElement(problemTextElement, {
-      delimiters: [
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false },
-        { left: '\\[', right: '\\]', display: true }
-      ],
-      throwOnError: false
-    });
-  } else {
-    // フォールバック：auto-render が未読込ならそのまま文字列表示
-    console.warn('auto-render (renderMathInElement) not found. Did you load ./katex/contrib/auto-render.min.js ?');
-  }
-
-  // --- 選択肢：こちらも auto-render で $...$ 部分のみ変換 ---
+  // --- 選択肢：混在テキスト（日本語＋数式）に対応して auto-render ---
   const choicesContainer = questionArea.querySelector('.choices');
-  if (window.renderMathInElement) {
-    renderMathInElement(choicesContainer, {
-      delimiters: [
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false },
-        { left: '\\[', right: '\\]', display: true }
-      ],
-      throwOnError: false
-    });
+  renderInlineMathIn(choicesContainer);
+
+  // --- 解説（calculation-process）：純粋数式ブロック or 混在テキストの両対応 ---
+  //    - 純粋数式ブロック（$$...$$, \[...\], \begin{aligned}... など）は katex.render()
+  //    - それ以外（文章混在）は auto-render で $...$ 部分のみ数式化
+  const processDisplay = document.getElementById('calculation-process');
+  const proc = currentQuestion.process || '';
+
+  // いったん空に
+  processDisplay.innerHTML = '';
+
+  if (isPureMathBlock(proc)) {
+    try {
+      // 純粋数式ブロック想定：displayMode でレンダリング
+      katex.render(proc, processDisplay, { throwOnError: false, displayMode: true });
+    } catch (e) {
+      // 失敗時は混在扱いフォールバック
+      processDisplay.textContent = proc;
+      renderInlineMathIn(processDisplay);
+    }
+  } else {
+    // 混在テキスト想定：素のテキストを入れて $...$ だけ数式化
+    processDisplay.textContent = proc;
+    renderInlineMathIn(processDisplay);
   }
 
-  // --- タイマー開始 ---
+  // タイマー開始
   questionStartTime = Date.now();
   startTimer();
 }
-
 
         function selectAnswer(element, selectedChoice) {
             stopTimer();
